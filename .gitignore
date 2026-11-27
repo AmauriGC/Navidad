@@ -49,3 +49,7 @@ desktop.ini
 .env.*
 *.keystore
 *.jks
+
+# Temporales de los builds de Android/WebGL
+/.utmp/
+/Data/
