@@ -57,11 +57,14 @@ public static class Graficos
     public static int Preset { get { Cargar(); return preset; } }
     public static Ajustes Actual { get { Cargar(); return actual; } }
 
-    /// <summary>Preset sugerido la primera vez: teléfono o navegador = Bajo; computadora = Alto.</summary>
+    /// <summary>Preset sugerido la primera vez: teléfono o navegador = Bajo; gráficos integrados (Intel, o poca
+    /// memoria de video) = Medio; tarjeta dedicada = Alto. Medido: en la laptop con Intel Arc integrada
+    /// Alto da ~35 FPS, Medio ~50 y Bajo ~65 (ver documentacion/md/analisis/ANALISIS_RENDIMIENTO.md).</summary>
     static int PresetInicial()
     {
         if (Application.isMobilePlatform || Application.platform == RuntimePlatform.WebGLPlayer) return 0;
-        return 2;
+        bool integrada = SystemInfo.graphicsDeviceVendor.ToLower().Contains("intel") || SystemInfo.graphicsMemorySize < 3000;
+        return integrada ? 1 : 2;
     }
 
     static void Cargar()
