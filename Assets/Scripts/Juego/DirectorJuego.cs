@@ -50,6 +50,7 @@ public class DirectorJuego : MonoBehaviour
     RectTransform capaSeleccion; CanvasGroup grupoSeleccion;
     Text textoDerrotaTitulo, textoDerrotaSub;
     RectTransform capaDificultad; CanvasGroup grupoDificultad;
+    RectTransform botonRegresar; bool regresarAElfo;
     Image[] tarjetas; Text[] tarjetasTexto;
     Text textoNombreElfo, textoDescElfo, flechaIzq, flechaDer; Image[] puntosElfo; RectTransform panelElfo;
     VarianteElfo variante;
@@ -107,13 +108,14 @@ public class DirectorJuego : MonoBehaviour
         {
             if (esc || (kb != null && kb.enterKey.wasPressedThisFrame)) Pausar(false);
             else if (kb != null && kb.tabKey.wasPressedThisFrame) MostrarSeccion((seccion + 1) % NombresSeccion.Length);
-            else if (r) Reiniciar();
+            else if (r) Reintentar();
+            else if (kb != null && kb.mKey.wasPressedThisFrame) MenuPrincipal();
             else if (q) Salir();
         }
         else if (Juego.Estado == Juego.Modo.Final)
         {
             // en los créditos (ganaste) un toque también sirve para jugar otra vez; en la derrota hay botones
-            if (r || (Tactil.Activo && !Juego.Perdio && grupoCreditos.alpha > 0.9f && Tactil.Toque)) { if (Juego.Perdio) Reintentar(); else Reiniciar(); }
+            if (r || (Tactil.Activo && !Juego.Perdio && grupoCreditos.alpha > 0.9f && Tactil.Toque)) { if (Juego.Perdio) Reintentar(); else MenuPrincipal(); }
             else if (q) Salir();
         }
 
@@ -196,6 +198,8 @@ public class DirectorJuego : MonoBehaviour
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.5f) { grupoSeleccion.alpha = t; yield return null; }
         grupoSeleccion.alpha = 1f;
 
+        while (true)      // elegir elfo -> dificultad; con "Regresar" en la dificultad se vuelve aquí
+        {
         float tiempo = 0f, salto = 0f, empujeIzq = 0f, empujeDer = 0f;
         flechaIzq.rectTransform.anchorMin = flechaIzq.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         flechaDer.rectTransform.anchorMin = flechaDer.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
@@ -264,6 +268,11 @@ public class DirectorJuego : MonoBehaviour
         }
         modelo.localRotation = rot0; modelo.localScale = esc0; grupoSeleccion.alpha = 0f;
         yield return SeleccionDificultad();
+        if (!regresarAElfo) break;
+        MostrarElfo(i);
+        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.3f) { grupoSeleccion.alpha = t; yield return null; }
+        grupoSeleccion.alpha = 1f;
+        }
         yield return UIFundido.A(1f, 0.5f);
         Destroy(luz.gameObject);
     }
@@ -283,6 +292,7 @@ public class DirectorJuego : MonoBehaviour
     /// <summary>Pantalla de dificultad (después de elegir elfo). Se recuerda la última elegida.</summary>
     IEnumerator SeleccionDificultad()
     {
+        regresarAElfo = false;
         int i = Dificultad.Elegido;
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.35f) { grupoDificultad.alpha = t; MarcarDificultad(i, t); yield return null; }
         grupoDificultad.alpha = 1f;
@@ -295,6 +305,14 @@ public class DirectorJuego : MonoBehaviour
             if (kb != null && (kb.aKey.wasPressedThisFrame || kb.leftArrowKey.wasPressedThisFrame)) cambio = -1;
             if (kb != null && (kb.dKey.wasPressedThisFrame || kb.rightArrowKey.wasPressedThisFrame)) cambio = 1;
             bool listo = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (Juego.PruebaAutomatica && tiempo > 1f);
+            // regresar a elegir elfo: [Esc] / [Retroceso] o el botón de arriba a la izquierda
+            if (tiempo > 0.3f && ((kb != null && (kb.escapeKey.wasPressedThisFrame || kb.backspaceKey.wasPressedThisFrame))
+                || (Tactil.Toque && RectTransformUtility.RectangleContainsScreenPoint(botonRegresar, Tactil.PosicionToque, null))))
+            {
+                regresarAElfo = true;
+                GestorAudio.Efecto("cambio", 0.7f);
+                break;
+            }
             if (Tactil.Toque && tiempo > 0.3f)
                 for (int k = 0; k < tarjetas.Length; k++)
                     if (RectTransformUtility.RectangleContainsScreenPoint(tarjetas[k].rectTransform, Tactil.PosicionToque, null))
@@ -308,8 +326,7 @@ public class DirectorJuego : MonoBehaviour
             if (listo) break;
             yield return null;
         }
-        Dificultad.Elegido = i;
-        GestorAudio.Efecto("etapa", 0.7f);
+        if (!regresarAElfo) { Dificultad.Elegido = i; GestorAudio.Efecto("etapa", 0.7f); }
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.35f) { grupoDificultad.alpha = 1f - t; yield return null; }
         grupoDificultad.alpha = 0f;
     }
@@ -576,10 +593,11 @@ public class DirectorJuego : MonoBehaviour
         CamaraOrbitaMouse.BloquearCursor(false);
     }
 
+    /// <summary>Partida nueva directa (mismo elfo y dificultad, sin título ni intro).</summary>
     void Reintentar()
     {
         Juego.Reintento = true;
-        Reiniciar();
+        MenuPrincipal();
     }
 
     IEnumerator EncenderLuces()
@@ -796,7 +814,8 @@ public class DirectorJuego : MonoBehaviour
             "Refúgiate bajo techo en las ventiscas  ·  Rodea las cajas sorpresa", 25, new Color(0.88f, 0.92f, 1f)).lineSpacing = 1.1f;
     }
 
-    void Reiniciar()
+    /// <summary>Recarga la escena y vuelve a la pantalla de título (o a jugar directo si Juego.Reintento).</summary>
+    void MenuPrincipal()
     {
         Time.timeScale = 1f;
         Juego.Estado = Juego.Modo.Titulo;
@@ -857,9 +876,10 @@ public class DirectorJuego : MonoBehaviour
             int k = i;
             botonesSeccion[i] = (Image)UIConstructor.Boton(columna, NombresSeccion[i], new Vector2(380, 66), new Vector2(0, 160 - i * 80), () => MostrarSeccion(k), 32).targetGraphic;
         }
-        UIConstructor.Imagen(UIConstructor.Rect("Separador", columna, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(340, 3), new Vector2(0, -200)), new Color(1f, 1f, 1f, 0.15f));
-        UIConstructor.Boton(columna, tactil ? "Reiniciar" : "Reiniciar  [R]", new Vector2(380, 62), new Vector2(0, -250), Reiniciar, 30);
-        if (!web) UIConstructor.Boton(columna, tactil ? "Salir" : "Salir  [Q]", new Vector2(380, 62), new Vector2(0, -322), Salir, 30);
+        UIConstructor.Imagen(UIConstructor.Rect("Separador", columna, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(340, 3), new Vector2(0, -150)), new Color(1f, 1f, 1f, 0.15f));
+        UIConstructor.Boton(columna, tactil ? "Reiniciar" : "Reiniciar  [R]", new Vector2(380, 62), new Vector2(0, -200), Reintentar, 30);
+        UIConstructor.Boton(columna, tactil ? "Menú principal" : "Menú principal  [M]", new Vector2(380, 62), new Vector2(0, -272), MenuPrincipal, 30);
+        if (!web) UIConstructor.Boton(columna, tactil ? "Salir del juego" : "Salir del juego  [Q]", new Vector2(380, 62), new Vector2(0, -344), Salir, 30);
         if (!tactil)
             UIConstructor.Texto(UIConstructor.Rect("Ayuda", columna, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(440, 40), new Vector2(0, 38)),
                                 "[Tab] cambia de sección", 22, new Color(1f, 1f, 1f, 0.5f));
@@ -933,8 +953,11 @@ public class DirectorJuego : MonoBehaviour
             tarjetasTexto[k] = UIConstructor.Texto(UIConstructor.Rect("Descripcion", rt, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(370, 200), new Vector2(0, 120)),
                                                    d.descripcion, 24, new Color(0.88f, 0.92f, 1f));
         }
-        UIConstructor.Sombra(UIConstructor.Texto(UIConstructor.Rect("Ayuda", capaDificultad, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1400, 60), new Vector2(0, 55)),
-                             Tactil.Activo ? "Toca una tarjeta para elegirla y tócala otra vez para ¡empezar!" : "[A] / [D] cambiar      ·      [Enter] ¡empezar!", 30, new Color(1f, 1f, 1f, 0.85f)));
+        UIConstructor.Sombra(UIConstructor.Texto(UIConstructor.Rect("Ayuda", capaDificultad, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1600, 60), new Vector2(0, 55)),
+                             Tactil.Activo ? "Toca una tarjeta para elegirla y tócala otra vez para ¡empezar!" : "[A] / [D] cambiar      ·      [Enter] ¡empezar!      ·      [Esc] regresar", 30, new Color(1f, 1f, 1f, 0.85f)));
+        // botón para volver a elegir elfo (el toque se revisa a mano en SeleccionDificultad, como las tarjetas)
+        var esquina = UIConstructor.Rect("Regresar", capaDificultad, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(300, 76), new Vector2(200, -90));
+        botonRegresar = (RectTransform)UIConstructor.Boton(esquina, Tactil.Activo ? "<  Regresar" : "<  Regresar  [Esc]", new Vector2(300, 76), Vector2.zero, null, 30).transform;
 
         // ---- elegir elfo
         capaSeleccion = UIConstructor.Capa("Seleccion", 26);
