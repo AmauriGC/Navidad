@@ -42,11 +42,31 @@ public static class Graficos
     public static readonly string[] NombresLuces = { "Pocas", "Cercanas", "Todas" };
     public static readonly string[] NombresFps = { "30", "60", "VSync", "Sin límite" };
 
-    static readonly Ajustes[] Presets = {
+    // Computadora (medido en la laptop con Intel integrada: Bajo ~65 FPS, Medio ~50, Alto ~35)
+    static readonly Ajustes[] PresetsPC = {
         new Ajustes { escala = 0.7f,  sombras = 1, ssao = false, bloom = true, detalle = 0.7f, luces = 0, particulas = 0.4f, distancia = 210f, fps = 1 },
         new Ajustes { escala = 0.85f, sombras = 2, ssao = false, bloom = true, detalle = 1.2f, luces = 1, particulas = 0.7f, distancia = 250f, fps = 2 },
         new Ajustes { escala = 1f,    sombras = 3, ssao = true,  bloom = true, detalle = 2f,   luces = 2, particulas = 1f,   distancia = 300f, fps = 2 },
     };
+    // Teléfono y navegador: el "Alto" de aquí es un nivel ESTABLE (sin SSAO, resolución 85%, sombras medias);
+    // el de computadora era demasiado para un celular.
+    static readonly Ajustes[] PresetsMovil = {
+        new Ajustes { escala = 0.6f,  sombras = 0, ssao = false, bloom = true, detalle = 0.6f, luces = 0, particulas = 0.3f, distancia = 200f, fps = 0 },
+        new Ajustes { escala = 0.75f, sombras = 1, ssao = false, bloom = true, detalle = 1.0f, luces = 1, particulas = 0.5f, distancia = 230f, fps = 1 },
+        new Ajustes { escala = 0.85f, sombras = 2, ssao = false, bloom = true, detalle = 1.4f, luces = 2, particulas = 0.8f, distancia = 270f, fps = 1 },
+    };
+    public static bool EsMovil { get { return Application.isMobilePlatform || Application.platform == RuntimePlatform.WebGLPlayer; } }
+    static Ajustes[] Presets { get { return EsMovil ? PresetsMovil : PresetsPC; } }
+
+    /// <summary>Calidad AUTOMÁTICA: empieza en el preset sugerido y, si el juego va lento, baja un nivel
+    /// (ver AutoCalidad). Se apaga sola cuando el jugador elige un preset o mueve un ajuste.</summary>
+    public static bool Automatico
+    {
+        get { return PlayerPrefs.GetInt("gr_auto", 1) == 1; }
+        set { PlayerPrefs.SetInt("gr_auto", value ? 1 : 0); }
+    }
+    /// <summary>SSAO solo existe en el renderer de computadora.</summary>
+    public static bool HaySsao { get { Cargar(); if (Urp != null) GuardarOriginales(Urp); return ssao != null; } }
 
     /// <summary>Se avisa cuando cambia el preset o un ajuste (la UI se refresca).</summary>
     public static event System.Action AlCambiar;
@@ -57,14 +77,11 @@ public static class Graficos
     public static int Preset { get { Cargar(); return preset; } }
     public static Ajustes Actual { get { Cargar(); return actual; } }
 
-    /// <summary>Preset sugerido la primera vez: teléfono o navegador = Bajo; gráficos integrados (Intel, o poca
-    /// memoria de video) = Medio; tarjeta dedicada = Alto. Medido: en la laptop con Intel Arc integrada
-    /// Alto da ~35 FPS, Medio ~50 y Bajo ~65 (ver documentacion/md/analisis/ANALISIS_RENDIMIENTO.md).</summary>
+    /// <summary>Preset sugerido la primera vez: teléfono o navegador = Medio (de su tabla); computadora = Alto.
+    /// Con la calidad automática, si no va fluido baja sola (ver AutoCalidad).</summary>
     static int PresetInicial()
     {
-        if (Application.isMobilePlatform || Application.platform == RuntimePlatform.WebGLPlayer) return 0;
-        bool integrada = SystemInfo.graphicsDeviceVendor.ToLower().Contains("intel") || SystemInfo.graphicsMemorySize < 3000;
-        return integrada ? 1 : 2;
+        return EsMovil ? 1 : 2;
     }
 
     static void Cargar()
@@ -107,6 +124,13 @@ public static class Graficos
     /// <summary>Elige Bajo/Medio/Alto (copia sus valores) o Personalizado (se queda con los actuales).</summary>
     public static void ElegirPreset(int i)
     {
+        Automatico = false;      // el jugador eligió: ya no se cambia solo
+        ElegirNivel(i);
+    }
+
+    /// <summary>Cambia de preset SIN apagar la calidad automática (lo usa AutoCalidad).</summary>
+    public static void ElegirNivel(int i)
+    {
         Cargar();
         preset = Mathf.Clamp(i, 0, Personalizado);
         if (preset < Personalizado) actual = Presets[preset].Copia();
@@ -118,10 +142,20 @@ public static class Graficos
     public static void Cambiar(System.Action<Ajustes> cambio)
     {
         Cargar();
+        Automatico = false;
         cambio(actual);
         preset = Personalizado;
         Aplicar();
         if (AlCambiar != null) AlCambiar();
+    }
+
+    /// <summary>Botón "Auto" del menú: vuelve al preset sugerido y deja que se ajuste solo.</summary>
+    public static void ActivarAutomatico()
+    {
+        Automatico = true;
+        ElegirNivel(PresetInicial());
+        var ac = Object.FindAnyObjectByType<AutoCalidad>();
+        if (ac != null) ac.Reiniciar();
     }
 
     // ------------------------------------------------------------------ aplicar
@@ -221,8 +255,12 @@ public static class Graficos
             em.rateOverTimeMultiplier = origParticulas[ps] * a.particulas;
         }
 
-        // Luces del pueblo
-        LucesCercanas.Asegurar().Radio = a.luces == 0 ? 25f : a.luces == 1 ? 55f : float.PositiveInfinity;
+        // Luces del pueblo (se desvanecen con la distancia; no se apagan de golpe)
+        LucesCercanas.Asegurar().Radio = a.luces == 0 ? 40f : a.luces == 1 ? 70f : float.PositiveInfinity;
+
+        // Calidad automática (vigila los FPS mientras se juega)
+        if (Automatico && Object.FindAnyObjectByType<AutoCalidad>() == null)
+            new GameObject("AutoCalidad").AddComponent<AutoCalidad>();
     }
 
     /// <summary>Domain Reload está apagado: se llama desde Juego.Reiniciar al dar Play.</summary>
@@ -236,44 +274,118 @@ public static class Graficos
 }
 
 /// <summary>
-/// Enciende solo las luces puntuales de la ambientación (farolitos, faroles, casas) que estén a menos de
-/// 'Radio' metros de la cámara. Revisa 4 veces por segundo. Con Radio infinito quedan todas encendidas.
-/// No toca luces con sombra, ni las del jugador, el árbol o las cinemáticas.
+/// Luces DECORATIVAS (farolitos del pueblo, faroles del patio y el brillo de las galletas). Dos reglas:
+///  1) Radio: a partir de 'Radio' metros de la cámara se desvanecen en una franja de 15 m.
+///  2) Cupo: en teléfono/navegador URP Forward+ solo dibuja 32 luces a la vez; la escena tiene ~55 y, si se pasan,
+///     URP elige cuáles dibujar cada cuadro => luces que parpadean o desaparecen al moverse. Por eso aquí solo se
+///     dejan prendidas las 'Maximo' más cercanas (12 en teléfono) y las demás se apagan. Todo cambio es gradual
+///     (la intensidad sube/baja en ~0.5 s), así nunca "brincan".
+/// Las luces importantes (taller, árbol, elfo, chimenea, estrella) no se tocan.
 /// </summary>
 public class LucesCercanas : MonoBehaviour
 {
     public float Radio = float.PositiveInfinity;
+    public int Maximo = 999;
+    const float Franja = 15f;
     readonly List<Light> luces = new List<Light>();
-    float siguiente;
+    readonly List<float> baseInt = new List<float>();
+    float[] actual, distancia;
+    int[] orden;
+    bool[] dentroCupo;
+    float siguienteOrden;
 
     public static LucesCercanas Asegurar()
     {
         var l = FindAnyObjectByType<LucesCercanas>();
         if (l == null) l = new GameObject("LucesCercanas").AddComponent<LucesCercanas>();
+        l.Maximo = Graficos.EsMovil ? 12 : 999;
         return l;
     }
 
     void Start()
     {
-        var raiz = GameObject.Find("--- AMBIENTACION ---");
-        if (raiz == null) return;
-        foreach (var luz in raiz.GetComponentsInChildren<Light>(true))
-            if (luz.enabled && luz.type == LightType.Point && luz.shadows == LightShadows.None) luces.Add(luz);
+        foreach (var luz in FindObjectsByType<Light>(FindObjectsInactive.Include))
+        {
+            if (luz.type != LightType.Point || luz.shadows != LightShadows.None) continue;
+            if (luz.GetComponent<LuzParpadeante>() != null) continue;
+            var padre = luz.transform.parent;
+            bool farolito = padre != null && padre.name == "Luces_Farolitos";
+            bool galleta = padre != null && padre.GetComponent<Galleta>() != null;
+            if (!farolito && !galleta && !luz.name.StartsWith("Luz_Farol")) continue;
+            luces.Add(luz); baseInt.Add(luz.intensity);
+        }
+        int n = luces.Count;
+        actual = new float[n]; distancia = new float[n]; orden = new int[n]; dentroCupo = new bool[n];
+        for (int i = 0; i < n; i++) { actual[i] = 1f; orden[i] = i; dentroCupo[i] = true; }
     }
 
     void Update()
     {
-        if (Time.unscaledTime < siguiente) return;
-        siguiente = Time.unscaledTime + 0.25f;
         var cam = Camera.main;
-        if (cam == null) return;
+        if (cam == null || actual == null) return;
         Vector3 p = cam.transform.position;
-        float r2 = Radio * Radio;
-        foreach (var luz in luces)
+        int n = luces.Count;
+        for (int i = 0; i < n; i++)
+            distancia[i] = luces[i] != null && luces[i].gameObject.activeInHierarchy ? Vector3.Distance(luces[i].transform.position, p) : float.MaxValue;
+
+        // el cupo se recalcula 4 veces por segundo (ordenar 40 números es barato)
+        if (Time.unscaledTime >= siguienteOrden)
         {
-            if (luz == null) continue;
-            bool prender = float.IsInfinity(Radio) || (luz.transform.position - p).sqrMagnitude < r2;
-            if (luz.enabled != prender) luz.enabled = prender;
+            siguienteOrden = Time.unscaledTime + 0.25f;
+            System.Array.Sort(orden, (a, b) => distancia[a].CompareTo(distancia[b]));
+            for (int k = 0; k < n; k++) dentroCupo[orden[k]] = k < Maximo && distancia[orden[k]] < float.MaxValue;
         }
+
+        bool todas = float.IsInfinity(Radio);
+        float paso = Time.unscaledDeltaTime * 2f;
+        for (int i = 0; i < n; i++)
+        {
+            var luz = luces[i];
+            if (luz == null || distancia[i] == float.MaxValue) continue;
+            float meta = 1f;
+            if (!todas)
+            {
+                meta = 1f - Mathf.Clamp01((distancia[i] - Radio) / Franja);
+                meta = meta * meta * (3f - 2f * meta);
+            }
+            if (!dentroCupo[i]) meta = 0f;
+            actual[i] = Mathf.MoveTowards(actual[i], meta, paso);
+            bool prender = actual[i] > 0.01f;
+            if (luz.enabled != prender) luz.enabled = prender;
+            if (prender) luz.intensity = baseInt[i] * actual[i];
+        }
+    }
+}
+
+/// <summary>
+/// Calidad automática "estable": mientras se juega mide los FPS en ventanas de 6 s. Si el promedio queda
+/// por debajo del mínimo (26 en teléfono/navegador, 30 en computadora) baja un preset y vuelve a medir.
+/// Después de 4 ventanas buenas deja de vigilar. Solo actúa si Graficos.Automatico está prendido.
+/// </summary>
+public class AutoCalidad : MonoBehaviour
+{
+    float tiempo, espera = 4f;
+    int cuadros, buenas;
+
+    public void Reiniciar() { tiempo = 0f; cuadros = 0; buenas = 0; espera = 4f; enabled = true; }
+
+    void Update()
+    {
+        if (!Graficos.Automatico || Juego.Estado != Juego.Modo.Jugando) return;
+        if (espera > 0f) { espera -= Time.unscaledDeltaTime; return; }   // dejar que se acomode tras un cambio
+        tiempo += Time.unscaledDeltaTime; cuadros++;
+        if (tiempo < 6f) return;
+        float fps = cuadros / tiempo;
+        tiempo = 0f; cuadros = 0;
+        float minimo = Graficos.EsMovil ? 26f : 30f;
+        int nivel = Graficos.Preset;
+        if (fps < minimo && nivel > 0 && nivel < Graficos.Personalizado)
+        {
+            Graficos.ElegirNivel(nivel - 1);
+            Graficos.Guardar();
+            UIAviso.Mensaje("Calidad ajustada a " + Graficos.NombresPreset[nivel - 1] + " para que vaya fluido", 3f);
+            espera = 3f; buenas = 0;
+        }
+        else if (++buenas >= 4) enabled = false;     // estable: ya no hace falta vigilar
     }
 }
