@@ -59,6 +59,7 @@ public class DirectorJuego : MonoBehaviour
     {
         Time.timeScale = 1f;
         Dificultad.NuevaPartida();   // la escena se recarga al reintentar: vidas y dificultad desde cero
+        Graficos.Aplicar();          // calidad gráfica guardada (preset o personalizada)
         if (jugador == null) jugador = GameObject.FindGameObjectWithTag("Player").transform;
         elfo = jugador.GetComponent<ElfoController>();
         inventario = jugador.GetComponent<Inventario>();
@@ -103,6 +104,7 @@ public class DirectorJuego : MonoBehaviour
         else if (Juego.Estado == Juego.Modo.Pausa)
         {
             if (kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) Pausar(false);
+            else if (kb.tabKey.wasPressedThisFrame) MostrarPestana(!pestanaGraficos);
             else if (kb.rKey.wasPressedThisFrame) Reiniciar();
             else if (kb.qKey.wasPressedThisFrame) Salir();
         }
@@ -384,6 +386,7 @@ public class DirectorJuego : MonoBehaviour
     void EmpezarAJugar()
     {
         Dificultad.Aplicar();        // solo la primera vez: cascanueces, reloj y vidas según el nivel elegido
+        Graficos.Aplicar();          // otra vez: alcanza a las partículas que la dificultad acaba de crear (ventisca)
         Juego.Estado = Juego.Modo.Jugando;
         CamaraOrbitaMouse.BloquearCursor(true);
     }
@@ -712,7 +715,21 @@ public class DirectorJuego : MonoBehaviour
         grupoPausa.alpha = pausa ? 1f : 0f;
         grupoPausa.blocksRaycasts = grupoPausa.interactable = pausa;   // los sliders solo responden en pausa
         CamaraOrbitaMouse.BloquearCursor(!pausa);
-        if (!pausa) Opciones.Guardar();
+        if (!pausa) { Opciones.Guardar(); Graficos.Guardar(); }
+        else MostrarPestana(false);
+    }
+
+    // pestañas de la pausa: Opciones (sonido, mouse, medallas, controles) | Gráficos
+    bool pestanaGraficos;
+    RectTransform panelOpciones, panelGraficos;
+    Image tabOpciones, tabGraficos;
+    void MostrarPestana(bool graficos)
+    {
+        pestanaGraficos = graficos;
+        panelOpciones.gameObject.SetActive(!graficos);
+        panelGraficos.gameObject.SetActive(graficos);
+        tabOpciones.color = graficos ? new Color(1f, 1f, 1f, 0.14f) : new Color(1f, 0.75f, 0.3f, 0.85f);
+        tabGraficos.color = graficos ? new Color(1f, 0.75f, 0.3f, 0.85f) : new Color(1f, 1f, 1f, 0.14f);
     }
 
     void Reiniciar()
@@ -763,18 +780,21 @@ public class DirectorJuego : MonoBehaviour
         UIConstructor.Sombra(UIConstructor.Titulo(UIConstructor.Rect("Titulo", capaPausa, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1000, 120), new Vector2(0, 360)),
                              "PAUSA", 90, new Color(1f, 0.85f, 0.45f), TextAnchor.MiddleCenter, FontStyle.Bold), 4f);
         UIConstructor.Texto(UIConstructor.Rect("Opciones", capaPausa, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1400, 60), new Vector2(0, 260)),
-                            "[Esc] Continuar     [R] Reiniciar     [Q] Salir", 38, Color.white);
+                            "[Esc] Continuar     [Tab] Opciones / Gráficos     [R] Reiniciar     [Q] Salir", 38, Color.white);
+        // PESTAÑAS: Opciones | Gráficos (clic o [Tab])
+        tabOpciones = (Image)UIConstructor.Boton(capaPausa, "Opciones", new Vector2(250, 60), new Vector2(-135, 185), () => MostrarPestana(false), 38).targetGraphic;
+        tabGraficos = (Image)UIConstructor.Boton(capaPausa, "Gráficos", new Vector2(250, 60), new Vector2(135, 185), () => MostrarPestana(true), 38).targetGraphic;
+        panelOpciones = UIConstructor.PantallaCompleta("PanelOpciones", capaPausa);
+        panelGraficos = (RectTransform)UIGraficos.Construir(capaPausa).transform;
         // OPCIONES: sliders que guardan su valor en Opciones (PlayerPrefs). Se usan con el mouse.
-        UIConstructor.Titulo(UIConstructor.Rect("TituloOpciones", capaPausa, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(800, 60), new Vector2(0, 170)),
-                             "Opciones", 46, new Color(0.75f, 0.9f, 1f));
-        UIConstructor.Deslizador(capaPausa, "Música", new Vector2(0, 100), Opciones.Musica, v => Opciones.Musica = v);
-        UIConstructor.Deslizador(capaPausa, "Efectos", new Vector2(0, 35), Opciones.Efectos, v => { Opciones.Efectos = v; GestorAudio.Efecto("tick", 1f, 0f); });
-        UIConstructor.Deslizador(capaPausa, "Ambiente", new Vector2(0, -30), Opciones.Ambiente, v => Opciones.Ambiente = v);
-        UIConstructor.Deslizador(capaPausa, "Mouse", new Vector2(0, -95), Opciones.Sensibilidad, v => Opciones.Sensibilidad = v, 0.3f, 2.5f);
+        UIConstructor.Deslizador(panelOpciones, "Música", new Vector2(0, 100), Opciones.Musica, v => Opciones.Musica = v);
+        UIConstructor.Deslizador(panelOpciones, "Efectos", new Vector2(0, 35), Opciones.Efectos, v => { Opciones.Efectos = v; GestorAudio.Efecto("tick", 1f, 0f); });
+        UIConstructor.Deslizador(panelOpciones, "Ambiente", new Vector2(0, -30), Opciones.Ambiente, v => Opciones.Ambiente = v);
+        UIConstructor.Deslizador(panelOpciones, "Mouse", new Vector2(0, -95), Opciones.Sensibilidad, v => Opciones.Sensibilidad = v, 0.3f, 2.5f);
         // MEDALLAS ganadas (fila centrada debajo de las opciones)
-        Medallas.Fila(capaPausa, new Vector2(0.5f, 0.5f), new Vector2(0, -205));
+        Medallas.Fila(panelOpciones, new Vector2(0.5f, 0.5f), new Vector2(0, -205));
         // CONTROLES abajo
-        var ctlP = UIConstructor.Texto(UIConstructor.Rect("Controles", capaPausa, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1600, 170), new Vector2(0, 115)),
+        var ctlP = UIConstructor.Texto(UIConstructor.Rect("Controles", panelOpciones, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1600, 170), new Vector2(0, 115)),
                                        Guion.Controles, 26, new Color(0.8f, 0.85f, 0.95f));
         ctlP.lineSpacing = 1.05f; UIConstructor.Sombra(ctlP);
 
