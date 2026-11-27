@@ -106,7 +106,7 @@ public class DirectorJuego : MonoBehaviour
         else if (Juego.Estado == Juego.Modo.Pausa)
         {
             if (esc || (kb != null && kb.enterKey.wasPressedThisFrame)) Pausar(false);
-            else if (kb != null && kb.tabKey.wasPressedThisFrame) MostrarPestana(!pestanaGraficos);
+            else if (kb != null && kb.tabKey.wasPressedThisFrame) MostrarSeccion((seccion + 1) % NombresSeccion.Length);
             else if (r) Reiniciar();
             else if (q) Salir();
         }
@@ -723,20 +723,53 @@ public class DirectorJuego : MonoBehaviour
         grupoPausa.blocksRaycasts = grupoPausa.interactable = pausa;   // los sliders solo responden en pausa
         CamaraOrbitaMouse.BloquearCursor(!pausa);
         if (!pausa) { Opciones.Guardar(); Graficos.Guardar(); }
-        else MostrarPestana(false);
+        else MostrarSeccion(0);
     }
 
-    // pestañas de la pausa: Opciones (sonido, mouse, medallas, controles) | Gráficos
-    bool pestanaGraficos;
-    RectTransform panelOpciones, panelGraficos;
-    Image tabOpciones, tabGraficos;
-    void MostrarPestana(bool graficos)
+    // SECCIONES de la pausa: la columna de la izquierda elige cuál se ve en la tarjeta de la derecha
+    static readonly string[] NombresSeccion = { "Sonido", "Gráficos", "Controles", "Medallas" };
+    int seccion;
+    RectTransform[] panelesSeccion;
+    Image[] botonesSeccion;
+    Text tituloSeccion;
+    void MostrarSeccion(int i)
     {
-        pestanaGraficos = graficos;
-        panelOpciones.gameObject.SetActive(!graficos);
-        panelGraficos.gameObject.SetActive(graficos);
-        tabOpciones.color = graficos ? new Color(1f, 1f, 1f, 0.14f) : new Color(1f, 0.75f, 0.3f, 0.85f);
-        tabGraficos.color = graficos ? new Color(1f, 0.75f, 0.3f, 0.85f) : new Color(1f, 1f, 1f, 0.14f);
+        seccion = i;
+        for (int k = 0; k < panelesSeccion.Length; k++)
+        {
+            panelesSeccion[k].gameObject.SetActive(k == i);
+            botonesSeccion[k].color = k == i ? new Color(1f, 0.75f, 0.3f, 0.9f) : new Color(1f, 1f, 1f, 0.1f);
+        }
+        tituloSeccion.text = NombresSeccion[i];
+    }
+
+    /// <summary>Sección Controles: dos columnas de "tecla → acción" y abajo los consejos de Difícil/Imposible.</summary>
+    static void ListaControles(RectTransform p)
+    {
+        string[,] filas = Tactil.Activo ? new string[,] {
+            { "Joystick", "Caminar (a fondo: correr)" }, { "Arrastrar", "Mover la cámara" }, { "Pellizcar", "Acercar / alejar" },
+            { "Saltar", "Saltar" }, { "E", "Recoger, colocar o juntar nieve" }, { "Q", "Soltar lo que llevas" },
+            { "Bola", "Lanzar bola de nieve" }, { "II", "Pausa" } }
+        : new string[,] {
+            { "W A S D", "Caminar" }, { "Shift", "Correr (¡hace ruido!)" }, { "Espacio", "Saltar" }, { "Mouse", "Mover la cámara" },
+            { "Rueda", "Acercar / alejar" }, { "E", "Recoger, colocar o juntar nieve" }, { "Q", "Soltar lo que llevas" },
+            { "F / Clic", "Lanzar bola de nieve" }, { "Esc", "Pausa" }, { "Tab", "Cambiar de sección (aquí)" } };
+        int n = filas.GetLength(0), mitad = (n + 1) / 2;
+        for (int i = 0; i < n; i++)
+        {
+            float cx = i < mitad ? -310 : 310, y = 250 - (i % mitad) * 78;
+            var tecla = UIConstructor.Rect("Tecla_" + i, p, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(170, 56), new Vector2(cx - 190, y));
+            UIConstructor.Redondear(UIConstructor.Imagen(tecla, new Color(1f, 0.82f, 0.45f, 0.95f)), 0.6f);
+            UIConstructor.Texto(UIConstructor.PantallaCompleta("Texto", tecla), filas[i, 0], 26, new Color(0.15f, 0.1f, 0.2f), TextAnchor.MiddleCenter, FontStyle.Bold);
+            var acc = UIConstructor.Texto(UIConstructor.Rect("Accion_" + i, p, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(380, 56), new Vector2(cx + 100, y)),
+                                          filas[i, 1], 28, Color.white, TextAnchor.MiddleLeft);
+            UIConstructor.Sombra(acc);
+        }
+        var caja = UIConstructor.Rect("Consejos", p, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1180, 150), new Vector2(0, -290));
+        UIConstructor.Redondear(UIConstructor.Imagen(caja, new Color(0.45f, 0.75f, 1f, 0.12f)));
+        UIConstructor.Texto(UIConstructor.PantallaCompleta("Texto", caja),
+            "<b><color=#9fe0ff>En Difícil e Imposible</color></b>\nRecarga la linterna junto a la chimenea o un farol\n" +
+            "Refúgiate bajo techo en las ventiscas  ·  Rodea las cajas sorpresa", 25, new Color(0.88f, 0.92f, 1f)).lineSpacing = 1.1f;
     }
 
     void Reiniciar()
@@ -780,33 +813,62 @@ public class DirectorJuego : MonoBehaviour
         UIConstructor.Sombra(textoPresiona);
         // (los controles y las medallas ahora están en el menú de PAUSA: el título queda más limpio)
 
-        // ---- pausa
+        // ---- pausa: COLUMNA a la izquierda (título + secciones + acciones) y TARJETA a la derecha con la sección
         capaPausa = UIConstructor.Capa("Pausa", 40);
         grupoPausa = UIConstructor.Grupo(capaPausa, 0f);
-        UIConstructor.Imagen(UIConstructor.PantallaCompleta("Fondo", capaPausa), new Color(0.02f, 0.03f, 0.08f, 0.8f));
-        UIConstructor.Sombra(UIConstructor.Titulo(UIConstructor.Rect("Titulo", capaPausa, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1000, 120), new Vector2(0, 360)),
-                             "PAUSA", 90, new Color(1f, 0.85f, 0.45f), TextAnchor.MiddleCenter, FontStyle.Bold), 4f);
-        // botones (clic o dedo); entre corchetes la tecla que hace lo mismo
+        UIConstructor.Imagen(UIConstructor.PantallaCompleta("Fondo", capaPausa), new Color(0.02f, 0.03f, 0.08f, 0.72f));
         bool web = Application.platform == RuntimePlatform.WebGLPlayer;     // en el navegador no se puede "salir"
-        UIConstructor.Boton(capaPausa, Tactil.Activo ? "Continuar" : "[Esc] Continuar", new Vector2(340, 64), new Vector2(web ? -190 : -380, 268), () => Pausar(false), 34);
-        UIConstructor.Boton(capaPausa, Tactil.Activo ? "Reiniciar" : "[R] Reiniciar", new Vector2(340, 64), new Vector2(web ? 190 : 0, 268), Reiniciar, 34);
-        if (!web) UIConstructor.Boton(capaPausa, Tactil.Activo ? "Salir" : "[Q] Salir", new Vector2(340, 64), new Vector2(380, 268), Salir, 34);
-        // PESTAÑAS: Opciones | Gráficos (clic o [Tab])
-        tabOpciones = (Image)UIConstructor.Boton(capaPausa, "Opciones", new Vector2(290, 60), new Vector2(-155, 185), () => MostrarPestana(false), 38).targetGraphic;
-        tabGraficos = (Image)UIConstructor.Boton(capaPausa, Tactil.Activo ? "Gráficos" : "Gráficos [Tab]", new Vector2(290, 60), new Vector2(155, 185), () => MostrarPestana(true), 38).targetGraphic;
-        panelOpciones = UIConstructor.PantallaCompleta("PanelOpciones", capaPausa);
-        panelGraficos = (RectTransform)UIGraficos.Construir(capaPausa).transform;
-        // OPCIONES: sliders que guardan su valor en Opciones (PlayerPrefs). Se usan con el mouse.
-        UIConstructor.Deslizador(panelOpciones, "Música", new Vector2(0, 100), Opciones.Musica, v => Opciones.Musica = v);
-        UIConstructor.Deslizador(panelOpciones, "Efectos", new Vector2(0, 35), Opciones.Efectos, v => { Opciones.Efectos = v; GestorAudio.Efecto("tick", 1f, 0f); });
-        UIConstructor.Deslizador(panelOpciones, "Ambiente", new Vector2(0, -30), Opciones.Ambiente, v => Opciones.Ambiente = v);
-        UIConstructor.Deslizador(panelOpciones, "Mouse", new Vector2(0, -95), Opciones.Sensibilidad, v => Opciones.Sensibilidad = v, 0.3f, 2.5f);
-        // MEDALLAS ganadas (fila centrada debajo de las opciones)
-        Medallas.Fila(panelOpciones, new Vector2(0.5f, 0.5f), new Vector2(0, -205));
-        // CONTROLES abajo
-        var ctlP = UIConstructor.Texto(UIConstructor.Rect("Controles", panelOpciones, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1600, 170), new Vector2(0, 115)),
-                                       Tactil.Activo ? Guion.ControlesTactiles : Guion.Controles, 26, new Color(0.8f, 0.85f, 0.95f));
-        ctlP.lineSpacing = 1.05f; UIConstructor.Sombra(ctlP);
+        bool tactil = Tactil.Activo;
+
+        var columna = UIConstructor.Rect("Columna", capaPausa, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(460, 900), new Vector2(270, 0));
+        UIConstructor.Redondear(UIConstructor.Imagen(columna, new Color(0.05f, 0.07f, 0.16f, 0.88f)));
+        var tp = UIConstructor.Titulo(UIConstructor.Rect("Titulo", columna, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(440, 120), new Vector2(0, -80)),
+                                      "PAUSA", 84, new Color(1f, 0.85f, 0.45f), TextAnchor.MiddleCenter, FontStyle.Bold);
+        UIConstructor.Sombra(tp, 4f);
+        var bc = UIConstructor.Boton(columna, tactil ? "Continuar" : "Continuar  [Esc]", new Vector2(380, 76), new Vector2(0, 270), () => Pausar(false), 34);
+        bc.targetGraphic.color = new Color(0.35f, 0.75f, 0.45f, 0.9f);
+        botonesSeccion = new Image[NombresSeccion.Length];
+        for (int i = 0; i < NombresSeccion.Length; i++)
+        {
+            int k = i;
+            botonesSeccion[i] = (Image)UIConstructor.Boton(columna, NombresSeccion[i], new Vector2(380, 66), new Vector2(0, 160 - i * 80), () => MostrarSeccion(k), 32).targetGraphic;
+        }
+        UIConstructor.Imagen(UIConstructor.Rect("Separador", columna, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(340, 3), new Vector2(0, -200)), new Color(1f, 1f, 1f, 0.15f));
+        UIConstructor.Boton(columna, tactil ? "Reiniciar" : "Reiniciar  [R]", new Vector2(380, 62), new Vector2(0, -250), Reiniciar, 30);
+        if (!web) UIConstructor.Boton(columna, tactil ? "Salir" : "Salir  [Q]", new Vector2(380, 62), new Vector2(0, -322), Salir, 30);
+        if (!tactil)
+            UIConstructor.Texto(UIConstructor.Rect("Ayuda", columna, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(440, 40), new Vector2(0, 38)),
+                                "[Tab] cambia de sección", 22, new Color(1f, 1f, 1f, 0.5f));
+
+        // tarjeta: ocupa del lado derecho de la columna hasta la orilla (se adapta a pantallas anchas de teléfono)
+        var tarjeta = UIConstructor.Rect("Tarjeta", capaPausa, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-580, 900), new Vector2(270, 0));
+        UIConstructor.Redondear(UIConstructor.Imagen(tarjeta, new Color(0.05f, 0.07f, 0.16f, 0.82f)));
+        tituloSeccion = UIConstructor.Titulo(UIConstructor.Rect("TituloSeccion", tarjeta, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(900, 90), new Vector2(0, -62)),
+                                             "", 60, new Color(1f, 0.85f, 0.45f), TextAnchor.MiddleCenter, FontStyle.Bold);
+        UIConstructor.Sombra(tituloSeccion, 3f);
+        UIConstructor.Imagen(UIConstructor.Rect("Linea", tarjeta, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(700, 3), new Vector2(0, -112)), new Color(1f, 0.85f, 0.45f, 0.35f));
+        panelesSeccion = new RectTransform[NombresSeccion.Length];
+        for (int i = 0; i < NombresSeccion.Length; i++)
+        {
+            var c = UIConstructor.PantallaCompleta("Seccion_" + NombresSeccion[i], tarjeta);
+            c.offsetMax = new Vector2(0, -80);          // debajo del título
+            panelesSeccion[i] = c;
+        }
+        // SONIDO (y sensibilidad de la cámara): sliders que guardan su valor en Opciones (PlayerPrefs)
+        var ps = panelesSeccion[0];
+        UIConstructor.Deslizador(ps, "Música", new Vector2(-40, 150), Opciones.Musica, v => Opciones.Musica = v);
+        UIConstructor.Deslizador(ps, "Efectos", new Vector2(-40, 60), Opciones.Efectos, v => { Opciones.Efectos = v; GestorAudio.Efecto("tick", 1f, 0f); });
+        UIConstructor.Deslizador(ps, "Ambiente", new Vector2(-40, -30), Opciones.Ambiente, v => Opciones.Ambiente = v);
+        UIConstructor.Deslizador(ps, tactil ? "Cámara" : "Mouse", new Vector2(-40, -120), Opciones.Sensibilidad, v => Opciones.Sensibilidad = v, 0.3f, 2.5f);
+        UIConstructor.Texto(UIConstructor.Rect("Nota", ps, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(900, 36), new Vector2(0, -170)),
+                            "Qué tan rápido gira la cámara", 22, new Color(0.75f, 0.85f, 1f, 0.8f));
+        // GRÁFICOS
+        var pg = (RectTransform)UIGraficos.Construir(panelesSeccion[1]).transform;
+        pg.offsetMax = new Vector2(0, 0);
+        // CONTROLES y MEDALLAS
+        ListaControles(panelesSeccion[2]);
+        Medallas.Lista(panelesSeccion[3]);
+        MostrarSeccion(0);
 
         // ---- derrota (amaneció sin terminar el árbol)
         capaDerrota = UIConstructor.Capa("Derrota", 44);
