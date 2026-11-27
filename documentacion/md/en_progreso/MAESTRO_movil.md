@@ -1,7 +1,7 @@
 # MAESTRO · Versión para teléfono (Android)
 
 - Estado: En progreso (falta probar en el teléfono)
-- Creado: 27/11/2026 · Actualizado: 27/11/2026
+- Creado: 27/11/2026 · Actualizado: 27/11/2026 (v1.1)
 
 ## Objetivo
 Que el juego se pueda instalar y jugar en un teléfono Android con controles táctiles.
@@ -44,3 +44,17 @@ Que el juego se pueda instalar y jugar en un teléfono Android con controles tá
   depuración), subido al Release v1.0: https://github.com/AmauriGC/Navidad/releases/tag/v1.0
 - Falta: jugar una partida completa en el teléfono y medir FPS; la Fase 5 (keystore propia) solo si se
   sube a Play Store.
+
+## Versión 1.1 (27/11/2026)
+- Menú de pausa reorganizado: columna izquierda (Continuar, Sonido, Gráficos, Controles, Medallas,
+  Reiniciar, Salir) y tarjeta a la derecha con la sección elegida; [Tab] cambia de sección
+  (`DirectorJuego.cs`, `UIGraficos.cs`, `Medallas.Lista`).
+- Controles táctiles rehechos con EnhancedTouch (ya no se traban) y diseño nuevo (`ControlesTactiles.cs`).
+- Gráficos: presets separados para PC y para móvil/web (en móvil el "Alto" es estable), botón Auto y clase
+  `AutoCalidad`, que baja la calidad si va a menos de 26 FPS en móvil o 30 en PC (`Graficos.cs`).
+- Parpadeo de luces en el teléfono: `Mobile_Renderer` pasó de Forward (solo 4 luces por objeto) a
+  Forward+, y se actualizó el filtrado de shaders de `Mobile_RPAsset` para Forward+. `LucesCercanas`
+  deja encendidas solo las 12 luces decorativas más cercanas en móvil (Forward+ admite 32 luces visibles).
+- APK 1.1 (versionCode 2, solo horizontal, IL2CPP, ARM64) en el Release v1.1:
+  https://github.com/AmauriGC/Navidad/releases/tag/v1.1 — se instala encima de la 1.0.
+- Web actualizada con la misma versión: https://amaurigc.github.io/Navidad/
