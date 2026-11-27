@@ -36,7 +36,7 @@
 | `git/` | Ramas, commits e ignores |
 | `md/hechos/MAESTRO_juego.md` | Sistemas del juego, escena, controles, dificultad |
 | `md/hechos/MAESTRO_modelos.md` | Flujo Blender -> glTF -> Unity, estilo low-poly |
-| `md/pendientes/MAESTRO_graficos.md` | Menú de gráficos Bajo / Medio / Alto / Personalizado |
+| `md/hechos/MAESTRO_graficos.md` | Menú de gráficos Bajo / Medio / Alto / Personalizado |
 | `md/pendientes/MAESTRO_movil.md` | Versión para teléfono (Android) |
 | `md/analisis/ANALISIS_RENDIMIENTO.md` | Mediciones de rendimiento y hallazgos |
 
