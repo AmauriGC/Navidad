@@ -118,7 +118,7 @@ public class LanzadorNieve : MonoBehaviour
         if (Juego.Bloqueado) return;
         bool f = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
         bool clic = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && Cursor.lockState == CursorLockMode.Locked;
-        if (!(f || clic)) return;
+        if (!(f || clic || Tactil.Lanzar)) return;
         if (bolas <= 0) { UIAviso.Mensaje("No tienes bolas de nieve. Junta nieve en un montón o una cubeta.", 2f); return; }
         if (Time.time - ultimoLanzamiento < enfriamiento) return;
         Lanzar();

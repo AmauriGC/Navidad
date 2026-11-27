@@ -27,9 +27,10 @@ public class Interactor : MonoBehaviour
         UIAviso.Mostrar(Actual != null ? "[E] " + Actual.Texto(this) : null);
 
         var kb = Keyboard.current;
-        if (kb == null) return;
-        if (kb.eKey.wasPressedThisFrame && Actual != null) Actual.Interactuar(this);
-        else if (kb.qKey.wasPressedThisFrame && Inventario != null && Inventario.TieneObjeto) Inventario.Soltar();
+        bool usar = (kb != null && kb.eKey.wasPressedThisFrame) || Tactil.Usar;        // E o botón táctil
+        bool soltar = (kb != null && kb.qKey.wasPressedThisFrame) || Tactil.Soltar;    // Q o botón táctil
+        if (usar && Actual != null) Actual.Interactuar(this);
+        else if (soltar && Inventario != null && Inventario.TieneObjeto) Inventario.Soltar();
     }
 
     Interactuable BuscarMasCercano()

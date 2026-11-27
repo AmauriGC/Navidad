@@ -60,7 +60,7 @@ public class ElfoController : MonoBehaviour
         Vector3 direccion = adelante * input.y + derecha * input.x;
 
         // 2) Acelerar suavemente hacia la velocidad deseada.
-        bool corre = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed && input.sqrMagnitude > 0.01f;
+        bool corre = ((Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed) || Tactil.Correr) && input.sqrMagnitude > 0.01f;
         Corriendo = corre;
         Vector3 objetivo = direccion * (corre ? velocidadCorrer : velocidadCaminar) * (Galleta.Todas ? 1.2f : 1f) * factorFrio;   // poder de galleta / frío
         velHorizontal = Vector3.MoveTowards(velHorizontal, objetivo, aceleracion * Time.deltaTime);
@@ -76,7 +76,7 @@ public class ElfoController : MonoBehaviour
         if (cc.isGrounded)
         {
             if (velVertical < 0f) velVertical = -2f; // lo mantiene pegado al piso
-            if (puedeMoverse && !Juego.Bloqueado && Time.time >= aturdidoHasta && Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            if (puedeMoverse && !Juego.Bloqueado && Time.time >= aturdidoHasta && ((Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame) || Tactil.Saltar))
             {
                 velVertical = Mathf.Sqrt(alturaSalto * -2f * gravedad);
                 GestorAudio.Efecto("salto", 0.5f);
@@ -134,12 +134,15 @@ public class ElfoController : MonoBehaviour
     Vector2 LeerInput()
     {
         var kb = Keyboard.current;
-        if (kb == null || !puedeMoverse || Time.time < aturdidoHasta || Juego.Bloqueado) return Vector2.zero;
-        Vector2 i = Vector2.zero;
-        if (kb.wKey.isPressed || kb.upArrowKey.isPressed) i.y += 1;
-        if (kb.sKey.isPressed || kb.downArrowKey.isPressed) i.y -= 1;
-        if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) i.x += 1;
-        if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) i.x -= 1;
+        if (!puedeMoverse || Time.time < aturdidoHasta || Juego.Bloqueado) return Vector2.zero;
+        Vector2 i = Tactil.Mover;       // joystick táctil (0 si no hay)
+        if (kb != null)
+        {
+            if (kb.wKey.isPressed || kb.upArrowKey.isPressed) i.y += 1;
+            if (kb.sKey.isPressed || kb.downArrowKey.isPressed) i.y -= 1;
+            if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) i.x += 1;
+            if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) i.x -= 1;
+        }
         return Vector2.ClampMagnitude(i, 1f);
     }
 
