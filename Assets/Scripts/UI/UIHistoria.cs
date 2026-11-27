@@ -207,7 +207,7 @@ public class UIHistoria : MonoBehaviour
         if (Juego.PruebaAutomatica && Time.unscaledTime - ultimoAuto > 0.6f) { ultimoAuto = Time.unscaledTime; return true; }
         var k = Keyboard.current; var m = Mouse.current;
         return (k != null && (k.eKey.wasPressedThisFrame || k.enterKey.wasPressedThisFrame || k.spaceKey.wasPressedThisFrame))
-            || (m != null && m.leftButton.wasPressedThisFrame);
+            || (m != null && m.leftButton.wasPressedThisFrame) || Tactil.Toque;
     }
 
     static IEnumerator Alfa(CanvasGroup g, float a, float dur)

@@ -146,11 +146,20 @@ public static class Guion
         "<color=#9fb4ff>Un juego de</color>\n<size=44>Cristian Amauri Gonzaga Castañeda</size>\n\n" +
         "<color=#9fb4ff>Diseño, modelos 3D y programación</color>\nhecho con Unity 6 (URP) y Blender\n\n" +
         "<color=#9fb4ff>Personajes</color>\nTilo, Nieves y Chispa, los elfos del turno de noche\nSargento Nuez · Cabo Bellota · Capitán Cáscara\nlos renos del establo · Santa\n\n" +
-        "¡Gracias por jugar!\n\n<size=30>[R] jugar otra vez</size>";
+        "¡Gracias por jugar!\n\n<size=30>{OTRA_VEZ}</size>";
+
+    /// <summary>Último renglón de los créditos según el control (teclado o pantalla táctil).</summary>
+    public static string OtraVez { get { return Tactil.Activo ? "Toca la pantalla para jugar otra vez" : "[R] jugar otra vez"; } }
 
     public const string Controles =
         "<b><color=#ffd166>Controles</color></b>\n" +
         "[WASD] caminar · [Shift] correr <color=#ff9a8a>(¡hace ruido!)</color> · [Espacio] saltar · [Mouse] cámara · [Rueda] zoom\n" +
         "[E] recoger / colocar / juntar nieve · [Q] soltar · [F] o [Clic] lanzar bola de nieve · [Esc] pausa\n" +
+        "<size=22><color=#9fe0ff>Difícil/Imposible: recarga la linterna junto a la chimenea o un farol · refúgiate de las ventiscas · rodea las cajas sorpresa</color></size>";
+
+    public const string ControlesTactiles =
+        "<b><color=#ffd166>Controles</color></b>\n" +
+        "Joystick (izquierda) caminar · empújalo a fondo para correr <color=#ff9a8a>(¡hace ruido!)</color> · arrastra a la derecha: cámara · pellizca: zoom\n" +
+        "[E] recoger / colocar / juntar nieve · [Q] soltar · [Bola] lanzar · [Saltar] · [II] pausa\n" +
         "<size=22><color=#9fe0ff>Difícil/Imposible: recarga la linterna junto a la chimenea o un farol · refúgiate de las ventiscas · rodea las cajas sorpresa</color></size>";
 }
