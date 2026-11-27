@@ -154,7 +154,7 @@ public static class UIConstructor
     {
         AsegurarEventSystem();
         var rt = Rect("Boton_" + texto, padre, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), tam, pos);
-        var img = Imagen(rt, new Color(1f, 1f, 1f, 0.14f)); img.raycastTarget = true;
+        var img = Redondear(Imagen(rt, new Color(1f, 1f, 1f, 0.14f)), 0.7f); img.raycastTarget = true;
         var txt = Texto(PantallaCompleta("Texto", rt), texto, tamLetra, Color.white);
         txt.raycastTarget = false;
         var b = rt.gameObject.AddComponent<Button>();
@@ -174,6 +174,63 @@ public static class UIConstructor
         Boton(zona, "<", new Vector2(56, 48), new Vector2(-212, 0), () => paso(-1), 34);
         Boton(zona, ">", new Vector2(56, 48), new Vector2(212, 0), () => paso(1), 34);
         return Texto(Rect("Valor", zona, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(340, 48)), "", 32, new Color(1f, 0.85f, 0.45f));
+    }
+
+    static Sprite redondeado;
+    /// <summary>Rectángulo con esquinas redondeadas (radio 18 px) para 9-slice: se estira sin deformar las esquinas.</summary>
+    public static Sprite SpriteRedondeado()
+    {
+        if (redondeado != null) return redondeado;
+        const int n = 64; const float r = 18f; var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+        {
+            float px = Mathf.Max(Mathf.Max(r - (x + 0.5f), (x + 0.5f) - (n - r)), 0f);
+            float py = Mathf.Max(Mathf.Max(r - (y + 0.5f), (y + 0.5f) - (n - r)), 0f);
+            float a = Mathf.Clamp01(r - Mathf.Sqrt(px * px + py * py) + 0.5f);
+            tex.SetPixel(x, y, new Color(1, 1, 1, a));
+        }
+        tex.Apply();
+        return redondeado = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(r + 2, r + 2, r + 2, r + 2));
+    }
+
+    /// <summary>Le pone a una Image el fondo redondeado (9-slice).</summary>
+    public static Image Redondear(Image img, float esquina = 1f)
+    {
+        img.sprite = SpriteRedondeado(); img.type = Image.Type.Sliced; img.pixelsPerUnitMultiplier = 1f / Mathf.Max(0.2f, esquina);
+        return img;
+    }
+
+    static Sprite anillo, disco;
+    /// <summary>Anillo liso (borde de botones y del joystick), 128 px, orilla suave.</summary>
+    public static Sprite SpriteAnillo()
+    {
+        if (anillo != null) return anillo;
+        const int n = 128; var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+        {
+            float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n / 2f, n / 2f));
+            float a = Mathf.Clamp01(3.5f - Mathf.Abs(d - (n / 2f - 5f)));            // ~7 px de grueso
+            tex.SetPixel(x, y, new Color(1, 1, 1, a));
+        }
+        tex.Apply();
+        return anillo = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f));
+    }
+
+    /// <summary>Disco con degradado (más claro arriba, como luz desde arriba) para botones con volumen.</summary>
+    public static Sprite SpriteDisco()
+    {
+        if (disco != null) return disco;
+        const int n = 128; var tex = new Texture2D(n, n, TextureFormat.RGBA32, false);
+        Vector2 c = new Vector2(n / 2f, n / 2f), luz = new Vector2(n * 0.5f, n * 0.78f);
+        for (int y = 0; y < n; y++) for (int x = 0; x < n; x++)
+        {
+            Vector2 p = new Vector2(x + 0.5f, y + 0.5f);
+            float a = Mathf.Clamp01(n / 2f - 1f - Vector2.Distance(p, c));
+            float brillo = Mathf.Lerp(1f, 0.72f, Mathf.Clamp01(Vector2.Distance(p, luz) / n));
+            tex.SetPixel(x, y, new Color(brillo, brillo, brillo, a));
+        }
+        tex.Apply();
+        return disco = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f));
     }
 
     static Sprite circulo, flecha;
