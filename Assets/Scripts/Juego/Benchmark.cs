@@ -57,7 +57,7 @@ public class Benchmark : MonoBehaviour
         sb.AppendLine("GPU: " + SystemInfo.graphicsDeviceName + " | " + SystemInfo.graphicsDeviceType);
         sb.AppendLine("CPU: " + SystemInfo.processorType + " | pantalla " + Screen.width + "x" + Screen.height);
         int enNav = 0, ags = 0;
-        foreach (var a in FindObjectsByType<UnityEngine.AI.NavMeshAgent>(FindObjectsSortMode.None)) { ags++; if (a.isOnNavMesh) enNav++; }
+        foreach (var a in FindObjectsByType<UnityEngine.AI.NavMeshAgent>()) { ags++; if (a.isOnNavMesh) enNav++; }
         sb.AppendLine("cascanueces sobre el NavMesh: " + enNav + "/" + ags);
         sb.AppendLine("ms por cuadro (FPS) en vistas: taller / arbol / pueblo");
 

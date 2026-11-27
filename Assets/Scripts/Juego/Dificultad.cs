@@ -91,7 +91,7 @@ public static class Dificultad
         // BOLAS DE NIEVE: cuántas caben
         if (jug != null) { var lan = jug.GetComponent<LanzadorNieve>(); if (lan != null) { lan.maximo = d.bolasMax; lan.bolas = Mathf.Min(lan.bolas, lan.maximo); } }
         // CAJAS SORPRESA: están APAGADAS en la escena; se prenden las primeras N (en orden)
-        var cajas = Object.FindObjectsByType<CajaSorpresa>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        var cajas = Object.FindObjectsByType<CajaSorpresa>(FindObjectsInactive.Include);
         System.Array.Sort(cajas, (a, b) => string.CompareOrdinal(a.name, b.name));
         for (int i = 0; i < cajas.Length; i++) cajas[i].gameObject.SetActive(i < d.cajasSorpresa);
         if (d.ventiscaMin > 0f && Object.FindAnyObjectByType<Ventisca>() == null) new GameObject("Ventisca").AddComponent<Ventisca>().Configurar(d.ventiscaMin, d.ventiscaMax);
