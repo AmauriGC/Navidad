@@ -1,0 +1,51 @@
+# Unity: carpetas que se regeneran solas
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Builds del juego (se generan con File > Build)
+/[Bb]uilds/
+/[Bb]uild/
+*.apk
+*.aab
+*.unitypackage
+
+# Archivos que genera el IDE
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Respaldos automáticos de Blender
+*.blend1
+*.blend2
+
+# Python
+__pycache__/
+*.pyc
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Secretos (por si algún día se usan)
+.env
+.env.*
+*.keystore
+*.jks
