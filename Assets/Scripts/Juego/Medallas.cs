@@ -126,6 +126,36 @@ public static class Medallas
         }
     }
 
+    /// <summary>Sección "Medallas" de la pausa: 6 tarjetas (2 columnas) con la medalla, su nombre y cómo se gana.</summary>
+    public static void Lista(Transform padre)
+    {
+        string[] nombres = { "Bronce", "Plata", "Oro", "Diamante", "Galletera", "Intacto" };
+        string[] como = { "Termina la noche en Fácil", "Termina la noche en Medio", "Termina la noche en Difícil",
+                          "Termina la noche en Imposible", "Termina con las 10 galletas", "Gana Difícil o Imposible sin perder vidas" };
+        int tienes = 0;
+        for (int i = 0; i < 6; i++)
+        {
+            bool tiene = i < 4 ? Tiene(i) : i == 4 ? TieneGalletas : TieneIntacto;
+            if (tiene) tienes++;
+            Color c = i < 4 ? Colores[i] : i == 4 ? new Color(1f, 0.82f, 0.4f) : new Color(1f, 0.5f, 0.55f);
+            var tarjeta = UIConstructor.Rect("Medalla_" + i, padre, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(560, 130),
+                                             new Vector2(i % 2 == 0 ? -300 : 300, 170 - (i / 2) * 160));
+            UIConstructor.Redondear(UIConstructor.Imagen(tarjeta, tiene ? new Color(c.r, c.g, c.b, 0.16f) : new Color(1f, 1f, 1f, 0.05f)));
+            var aro = UIConstructor.Rect("Circulo", tarjeta, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(84, 84), new Vector2(70, 0));
+            var img = UIConstructor.Imagen(aro, tiene ? c : new Color(0.3f, 0.32f, 0.38f, 0.7f)); img.sprite = UIConstructor.SpriteCirculo();
+            UIConstructor.Texto(UIConstructor.Rect("Simbolo", aro, Vector2.zero, Vector2.one), i == 5 ? "♥" : "★", 46,
+                                tiene ? Color.Lerp(c, Color.white, 0.6f) : new Color(0.55f, 0.58f, 0.65f, 0.8f));
+            var n = UIConstructor.Titulo(UIConstructor.Rect("Nombre", tarjeta, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(420, 50), new Vector2(340, 22)),
+                                         nombres[i], 36, tiene ? Color.Lerp(c, Color.white, 0.35f) : new Color(0.75f, 0.77f, 0.85f, 0.7f), TextAnchor.MiddleLeft, FontStyle.Bold);
+            UIConstructor.Sombra(n);
+            UIConstructor.Texto(UIConstructor.Rect("Como", tarjeta, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(420, 40), new Vector2(340, -22)),
+                                (tiene ? "¡Ganada! " : "") + como[i], 22, tiene ? new Color(0.85f, 1f, 0.85f) : new Color(0.8f, 0.82f, 0.9f, 0.75f), TextAnchor.MiddleLeft);
+        }
+        var total = UIConstructor.Texto(UIConstructor.Rect("Total", padre, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(900, 40), new Vector2(0, -330)),
+                                        "Tienes " + tienes + " de 6 medallas", 28, new Color(1f, 0.85f, 0.45f));
+        UIConstructor.Sombra(total);
+    }
+
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Reiniciar() { estudio = null; }
 }
