@@ -1,3 +1,4 @@
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -84,8 +85,19 @@ public class ControlesTactiles : MonoBehaviour
     Inventario inventario;
     LanzadorNieve lanzador;
 
+    // Se crea al arrancar Y cada vez que se carga la escena: al reiniciar o al perder, la escena se recarga y
+    // destruye estos controles (antes solo se creaban una vez y desaparecían tras el primer reinicio).
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Crear()
+    {
+        SceneManager.sceneLoaded -= AlCargarEscena;     // sin Domain Reload: evitar suscribirse dos veces
+        SceneManager.sceneLoaded += AlCargarEscena;
+        CrearSiFalta();
+    }
+
+    static void AlCargarEscena(Scene escena, LoadSceneMode modo) { CrearSiFalta(); }
+
+    static void CrearSiFalta()
     {
         if (!Tactil.Activo || FindAnyObjectByType<ControlesTactiles>() != null) return;
         new GameObject("ControlesTactiles").AddComponent<ControlesTactiles>();
