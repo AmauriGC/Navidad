@@ -16,6 +16,7 @@ public class Benchmark : MonoBehaviour
     static void Iniciar()
     {
         if (!System.Array.Exists(System.Environment.GetCommandLineArgs(), a => a == "-benchmark")) return;
+        Application.runInBackground = true;   // si no, el build se pausa cuando la ventana no tiene el foco
         var go = new GameObject("Benchmark");
         DontDestroyOnLoad(go);
         go.AddComponent<Benchmark>();
@@ -30,10 +31,13 @@ public class Benchmark : MonoBehaviour
 
     IEnumerator Start()
     {
+        Debug.Log("[Benchmark] inicio");
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = -1;
         yield return new WaitForSecondsRealtime(4f);
 
+        Graficos.ElegirPreset(2);   // empezar en Alto (= como está la escena)
+        QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;
         var cam = Camera.main;
         foreach (var b in cam.GetComponents<Behaviour>())
             if (b.GetType().Name.Contains("CinemachineBrain")) b.enabled = false;
@@ -58,21 +62,32 @@ public class Benchmark : MonoBehaviour
         sb.AppendLine("ms por cuadro (FPS) en vistas: taller / arbol / pueblo");
 
         string[] pruebas = { "base (como esta)", "sin SSAO", "sin sombras", "sombras 20 m", "renderScale 0.75",
-                             "lodBias 1", "sin LucesPueblo", "sin postproceso", "BAJO (todo junto)" };
+                             "lodBias 1", "sin LucesPueblo", "sin postproceso", "preset ALTO", "preset MEDIO", "preset BAJO" };
         for (int p = 0; p < pruebas.Length; p++)
         {
-            // aplicar
-            if (ssao) ssao.SetActive(p != 1 && p != 8);
-            urp.shadowDistance = p == 2 ? 0f : (p == 3 || p == 8) ? 20f : dist0;
-            urp.renderScale = (p == 4 || p == 8) ? 0.75f : escala0;
-            QualitySettings.lodBias = (p == 5 || p == 8) ? 1f : bias0;
-            if (luces) luces.SetActive(p != 6);
-            var datos = cam.GetUniversalAdditionalCameraData();
-            datos.renderPostProcessing = p != 7;
+            // aplicar (las pruebas 8-10 usan los presets reales del menú de gráficos)
+            if (p >= 8)
+            {
+                if (luces) luces.SetActive(true);
+                cam.GetUniversalAdditionalCameraData().renderPostProcessing = true;
+                Graficos.ElegirPreset(10 - p);
+                QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;   // medir sin tope
+            }
+            else
+            {
+                if (ssao) ssao.SetActive(p != 1);
+                urp.shadowDistance = p == 2 ? 0f : p == 3 ? 20f : dist0;
+                urp.renderScale = p == 4 ? 0.75f : escala0;
+                QualitySettings.lodBias = p == 5 ? 1f : bias0;
+                if (luces) luces.SetActive(p != 6);
+                cam.GetUniversalAdditionalCameraData().renderPostProcessing = p != 7;
+            }
 
             sb.Append(pruebas[p].PadRight(22) + ": ");
+            Debug.Log("[Benchmark] prueba " + pruebas[p]);
             for (int v = 0; v < Vistas.Length; v++)
             {
+                cam.farClipPlane = Graficos.Actual.distancia;
                 cam.transform.position = Vistas[v][0];
                 cam.transform.LookAt(Vistas[v][1]);
                 yield return new WaitForSecondsRealtime(1f);
