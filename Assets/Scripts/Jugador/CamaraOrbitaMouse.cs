@@ -13,6 +13,8 @@ public class CamaraOrbitaMouse : MonoBehaviour
 {
     public float sensibilidad = 0.12f;
     public bool invertirY = false;
+    [Tooltip("Multiplica el arrastre del dedo (pixeles) respecto al mouse.")]
+    public float sensibilidadTactil = 1.6f;
     public float zoomMin = 2.5f, zoomMax = 7f, velocidadZoom = 0.004f;
 
     CinemachineOrbitalFollow orbita;
@@ -24,11 +26,22 @@ public class CamaraOrbitaMouse : MonoBehaviour
         var mouse = Mouse.current;
         // Esc ahora lo maneja el DirectorJuego (menú de pausa). Si el juego no está en modo "Jugando"
         // (título, cinemática, letrero, pausa) la cámara no se mueve con el mouse.
-        if (mouse == null || Juego.Bloqueado) return;
-        if (mouse.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked) BloquearCursor(true);
-        if (Cursor.lockState != CursorLockMode.Locked) return;
-
-        Vector2 d = mouse.delta.ReadValue() * sensibilidad * Opciones.Sensibilidad;   // Opciones: menú de pausa
+        if (Juego.Bloqueado) return;
+        Vector2 d;
+        float scroll;
+        if (Tactil.Activo)
+        {   // teléfono: arrastrar en la mitad derecha gira la cámara, pellizcar hace zoom
+            d = Tactil.Camara * sensibilidadTactil * sensibilidad * Opciones.Sensibilidad;
+            scroll = Tactil.Zoom * 6f;
+        }
+        else
+        {
+            if (mouse == null) return;
+            if (mouse.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked) BloquearCursor(true);
+            if (Cursor.lockState != CursorLockMode.Locked) return;
+            d = mouse.delta.ReadValue() * sensibilidad * Opciones.Sensibilidad;   // Opciones: menú de pausa
+            scroll = mouse.scroll.ReadValue().y;
+        }
 
         // InputAxis es un struct: se copia, se modifica y se vuelve a asignar.
         var h = orbita.HorizontalAxis;
@@ -39,7 +52,6 @@ public class CamaraOrbitaMouse : MonoBehaviour
         v.Value = v.ClampValue(v.Value + (invertirY ? d.y : -d.y));
         orbita.VerticalAxis = v;
 
-        float scroll = mouse.scroll.ReadValue().y;
         if (Mathf.Abs(scroll) > 0.01f)
             orbita.Radius = Mathf.Clamp(orbita.Radius - scroll * velocidadZoom * orbita.Radius, zoomMin, zoomMax);
     }
@@ -59,6 +71,7 @@ public class CamaraOrbitaMouse : MonoBehaviour
 
     public static void BloquearCursor(bool bloquear)
     {
+        if (Tactil.Activo) bloquear = false;     // en teléfono no hay cursor que esconder
         Cursor.lockState = bloquear ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = !bloquear;
     }
