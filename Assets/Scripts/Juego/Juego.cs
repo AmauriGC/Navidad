@@ -39,5 +39,6 @@ public static class Juego
         Reintento = false;
         UnityEngine.Time.timeScale = 1f;
         Graficos.Reiniciar();
+        Tactil.Reiniciar();
     }
 }
