@@ -98,20 +98,23 @@ public class DirectorJuego : MonoBehaviour
     void Update()
     {
         var kb = Keyboard.current;
-        if (kb == null) return;
+        bool esc = kb != null && kb.escapeKey.wasPressedThisFrame;
+        bool r = kb != null && kb.rKey.wasPressedThisFrame;
+        bool q = kb != null && kb.qKey.wasPressedThisFrame;
 
-        if (Juego.Estado == Juego.Modo.Jugando && kb.escapeKey.wasPressedThisFrame) Pausar(true);
+        if (Juego.Estado == Juego.Modo.Jugando && (esc || Tactil.Pausa)) Pausar(true);
         else if (Juego.Estado == Juego.Modo.Pausa)
         {
-            if (kb.escapeKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame) Pausar(false);
-            else if (kb.tabKey.wasPressedThisFrame) MostrarPestana(!pestanaGraficos);
-            else if (kb.rKey.wasPressedThisFrame) Reiniciar();
-            else if (kb.qKey.wasPressedThisFrame) Salir();
+            if (esc || (kb != null && kb.enterKey.wasPressedThisFrame)) Pausar(false);
+            else if (kb != null && kb.tabKey.wasPressedThisFrame) MostrarPestana(!pestanaGraficos);
+            else if (r) Reiniciar();
+            else if (q) Salir();
         }
         else if (Juego.Estado == Juego.Modo.Final)
         {
-            if (kb.rKey.wasPressedThisFrame) { if (Juego.Perdio) Reintentar(); else Reiniciar(); }
-            else if (kb.qKey.wasPressedThisFrame) Salir();
+            // en los créditos (ganaste) un toque también sirve para jugar otra vez; en la derrota hay botones
+            if (r || (Tactil.Activo && !Juego.Perdio && grupoCreditos.alpha > 0.9f && Tactil.Toque)) { if (Juego.Perdio) Reintentar(); else Reiniciar(); }
+            else if (q) Salir();
         }
 
         if (Juego.Estado == Juego.Modo.Jugando) Consejos();
@@ -157,7 +160,7 @@ public class DirectorJuego : MonoBehaviour
             textoPresiona.color = new Color(1f, 1f, 1f, 0.55f + 0.45f * Mathf.Sin(tiempo * 3f));
             var kb = Keyboard.current; var m = Mouse.current;
             if (Juego.PruebaAutomatica && tiempo > 2f) break;
-            if ((kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (m != null && m.leftButton.wasPressedThisFrame)) break;
+            if ((kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (m != null && m.leftButton.wasPressedThisFrame) || Tactil.Toque) break;
             yield return null;
         }
         yield return SeleccionElfo();
@@ -217,10 +220,12 @@ public class DirectorJuego : MonoBehaviour
             int cambio = 0;
             if (kb != null && (kb.aKey.wasPressedThisFrame || kb.leftArrowKey.wasPressedThisFrame)) cambio = -1;
             if (kb != null && (kb.dKey.wasPressedThisFrame || kb.rightArrowKey.wasPressedThisFrame)) cambio = 1;
-            if (m != null && m.leftButton.wasPressedThisFrame)
+            bool tocoElfo = false;
+            if (Tactil.Toque)      // clic o dedo: a los lados = cambiar; sobre el elfo = elegirlo
             {
-                float x = m.position.ReadValue().x / Screen.width;
+                float x = Tactil.PosicionToque.x / Screen.width;
                 if (x < elfoX - 0.12f && x > elfoX - 0.32f) cambio = -1; else if (x > elfoX + 0.12f && x < elfoX + 0.32f) cambio = 1;
+                else if (Mathf.Abs(x - elfoX) <= 0.12f && tiempo > 0.3f) tocoElfo = true;
             }
             if (cambio != 0)
             {
@@ -229,7 +234,7 @@ public class DirectorJuego : MonoBehaviour
                 if (cambio < 0) empujeIzq = 1f; else empujeDer = 1f;
                 GestorAudio.Efecto("cambio", 0.7f);
             }
-            bool listo = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (Juego.PruebaAutomatica && tiempo > 1f);
+            bool listo = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || tocoElfo || (Juego.PruebaAutomatica && tiempo > 1f);
             if (listo && !VarianteElfo.Desbloqueado(i))
             {   // el secreto todavía no se puede elegir
                 listo = false; salto = 0.6f;
@@ -284,9 +289,9 @@ public class DirectorJuego : MonoBehaviour
             if (kb != null && (kb.aKey.wasPressedThisFrame || kb.leftArrowKey.wasPressedThisFrame)) cambio = -1;
             if (kb != null && (kb.dKey.wasPressedThisFrame || kb.rightArrowKey.wasPressedThisFrame)) cambio = 1;
             bool listo = (kb != null && (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame)) || (Juego.PruebaAutomatica && tiempo > 1f);
-            if (m != null && m.leftButton.wasPressedThisFrame)
+            if (Tactil.Toque && tiempo > 0.3f)
                 for (int k = 0; k < tarjetas.Length; k++)
-                    if (RectTransformUtility.RectangleContainsScreenPoint(tarjetas[k].rectTransform, m.position.ReadValue(), null))
+                    if (RectTransformUtility.RectangleContainsScreenPoint(tarjetas[k].rectTransform, Tactil.PosicionToque, null))
                     { if (k == i) listo = true; else cambio = k - i; }
             if (cambio != 0)
             {
@@ -543,6 +548,8 @@ public class DirectorJuego : MonoBehaviour
         Juego.Estado = Juego.Modo.Final;
         for (float t = 0f; t < 1f; t += Time.deltaTime / 1.2f) { grupoDerrota.alpha = t; yield return null; }
         grupoDerrota.alpha = 1f;
+        grupoDerrota.blocksRaycasts = grupoDerrota.interactable = true;    // botones Reintentar / Salir
+        CamaraOrbitaMouse.BloquearCursor(false);
     }
 
     void Reintentar()
@@ -769,7 +776,7 @@ public class DirectorJuego : MonoBehaviour
                                         "un juego de Cristian Amauri Gonzaga Castañeda", 26, new Color(1f, 0.9f, 0.7f, 0.85f), TextAnchor.MiddleRight);
         UIConstructor.Sombra(autor);
         textoPresiona = UIConstructor.Texto(UIConstructor.Rect("Presiona", capaTitulo, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1200, 80), new Vector2(0, 260)),
-                                            "Presiona [Enter] para comenzar", 40, Color.white);
+                                            Tactil.Activo ? "Toca la pantalla para comenzar" : "Presiona [Enter] para comenzar", 40, Color.white);
         UIConstructor.Sombra(textoPresiona);
         // (los controles y las medallas ahora están en el menú de PAUSA: el título queda más limpio)
 
@@ -779,11 +786,14 @@ public class DirectorJuego : MonoBehaviour
         UIConstructor.Imagen(UIConstructor.PantallaCompleta("Fondo", capaPausa), new Color(0.02f, 0.03f, 0.08f, 0.8f));
         UIConstructor.Sombra(UIConstructor.Titulo(UIConstructor.Rect("Titulo", capaPausa, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1000, 120), new Vector2(0, 360)),
                              "PAUSA", 90, new Color(1f, 0.85f, 0.45f), TextAnchor.MiddleCenter, FontStyle.Bold), 4f);
-        UIConstructor.Texto(UIConstructor.Rect("Opciones", capaPausa, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1400, 60), new Vector2(0, 260)),
-                            "[Esc] Continuar     [Tab] Opciones / Gráficos     [R] Reiniciar     [Q] Salir", 38, Color.white);
+        // botones (clic o dedo); entre corchetes la tecla que hace lo mismo
+        bool web = Application.platform == RuntimePlatform.WebGLPlayer;     // en el navegador no se puede "salir"
+        UIConstructor.Boton(capaPausa, Tactil.Activo ? "Continuar" : "[Esc] Continuar", new Vector2(340, 64), new Vector2(web ? -190 : -380, 268), () => Pausar(false), 34);
+        UIConstructor.Boton(capaPausa, Tactil.Activo ? "Reiniciar" : "[R] Reiniciar", new Vector2(340, 64), new Vector2(web ? 190 : 0, 268), Reiniciar, 34);
+        if (!web) UIConstructor.Boton(capaPausa, Tactil.Activo ? "Salir" : "[Q] Salir", new Vector2(340, 64), new Vector2(380, 268), Salir, 34);
         // PESTAÑAS: Opciones | Gráficos (clic o [Tab])
-        tabOpciones = (Image)UIConstructor.Boton(capaPausa, "Opciones", new Vector2(250, 60), new Vector2(-135, 185), () => MostrarPestana(false), 38).targetGraphic;
-        tabGraficos = (Image)UIConstructor.Boton(capaPausa, "Gráficos", new Vector2(250, 60), new Vector2(135, 185), () => MostrarPestana(true), 38).targetGraphic;
+        tabOpciones = (Image)UIConstructor.Boton(capaPausa, "Opciones", new Vector2(290, 60), new Vector2(-155, 185), () => MostrarPestana(false), 38).targetGraphic;
+        tabGraficos = (Image)UIConstructor.Boton(capaPausa, Tactil.Activo ? "Gráficos" : "Gráficos [Tab]", new Vector2(290, 60), new Vector2(155, 185), () => MostrarPestana(true), 38).targetGraphic;
         panelOpciones = UIConstructor.PantallaCompleta("PanelOpciones", capaPausa);
         panelGraficos = (RectTransform)UIGraficos.Construir(capaPausa).transform;
         // OPCIONES: sliders que guardan su valor en Opciones (PlayerPrefs). Se usan con el mouse.
@@ -795,7 +805,7 @@ public class DirectorJuego : MonoBehaviour
         Medallas.Fila(panelOpciones, new Vector2(0.5f, 0.5f), new Vector2(0, -205));
         // CONTROLES abajo
         var ctlP = UIConstructor.Texto(UIConstructor.Rect("Controles", panelOpciones, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1600, 170), new Vector2(0, 115)),
-                                       Guion.Controles, 26, new Color(0.8f, 0.85f, 0.95f));
+                                       Tactil.Activo ? Guion.ControlesTactiles : Guion.Controles, 26, new Color(0.8f, 0.85f, 0.95f));
         ctlP.lineSpacing = 1.05f; UIConstructor.Sombra(ctlP);
 
         // ---- derrota (amaneció sin terminar el árbol)
@@ -807,8 +817,8 @@ public class DirectorJuego : MonoBehaviour
         UIConstructor.Sombra(td, 5f);
         UIConstructor.Sombra(textoDerrotaSub = UIConstructor.Texto(UIConstructor.Rect("Sub", capaDerrota, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1400, 60), new Vector2(0, 10)),
                              "El Gran Árbol no estuvo listo a tiempo", 40, new Color(0.9f, 0.85f, 0.85f)));
-        UIConstructor.Sombra(UIConstructor.Texto(UIConstructor.Rect("Opciones", capaDerrota, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1400, 60), new Vector2(0, -110)),
-                             "[R] Reintentar          [Q] Salir", 42, Color.white));
+        UIConstructor.Boton(capaDerrota, Tactil.Activo ? "Reintentar" : "[R] Reintentar", new Vector2(360, 72), new Vector2(web ? 0 : -200, -110), Reintentar, 38);
+        if (!web) UIConstructor.Boton(capaDerrota, Tactil.Activo ? "Salir" : "[Q] Salir", new Vector2(360, 72), new Vector2(200, -110), Salir, 38);
 
         // ---- elegir dificultad: 4 tarjetas en fila
         capaDificultad = UIConstructor.Capa("Dificultad", 27);
@@ -838,7 +848,7 @@ public class DirectorJuego : MonoBehaviour
                                                    d.descripcion, 24, new Color(0.88f, 0.92f, 1f));
         }
         UIConstructor.Sombra(UIConstructor.Texto(UIConstructor.Rect("Ayuda", capaDificultad, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1400, 60), new Vector2(0, 55)),
-                             "[A] / [D] cambiar      ·      [Enter] ¡empezar!", 30, new Color(1f, 1f, 1f, 0.85f)));
+                             Tactil.Activo ? "Toca una tarjeta para elegirla y tócala otra vez para ¡empezar!" : "[A] / [D] cambiar      ·      [Enter] ¡empezar!", 30, new Color(1f, 1f, 1f, 0.85f)));
 
         // ---- elegir elfo
         capaSeleccion = UIConstructor.Capa("Seleccion", 26);
@@ -864,7 +874,7 @@ public class DirectorJuego : MonoBehaviour
             puntosElfo[k].sprite = UIConstructor.SpriteCirculo();
         }
         var ayuda = UIConstructor.Texto(UIConstructor.Rect("Ayuda", capaSeleccion, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1400, 60), new Vector2(0, 55)),
-                                        "[A] / [D] cambiar elfo      ·      [Enter] ¡a trabajar!", 30, new Color(1f, 1f, 1f, 0.85f));
+                                        Tactil.Activo ? "Toca < > para cambiar de elfo      ·      toca al elfo: ¡a trabajar!" : "[A] / [D] cambiar elfo      ·      [Enter] ¡a trabajar!", 30, new Color(1f, 1f, 1f, 0.85f));
         UIConstructor.Sombra(ayuda);
         // flechas a los lados del elfo (tercio izquierdo)
         flechaIzq = UIConstructor.Titulo(UIConstructor.Rect("FlechaIzq", capaSeleccion, new Vector2(0.3f, 0.5f), new Vector2(0.3f, 0.5f), new Vector2(200, 260), new Vector2(-290, 0)),
@@ -878,7 +888,7 @@ public class DirectorJuego : MonoBehaviour
         grupoCreditos = UIConstructor.Grupo(capaCreditos, 0f);
         UIConstructor.Imagen(UIConstructor.PantallaCompleta("Fondo", capaCreditos), new Color(0.01f, 0.01f, 0.03f, 1f));
         textoCreditos = UIConstructor.Texto(UIConstructor.Rect("Texto", capaCreditos, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1600, 900)),
-                                            Guion.Creditos, 34, new Color(0.92f, 0.92f, 0.95f));
+                                            Guion.Creditos.Replace("{OTRA_VEZ}", Guion.OtraVez), 34, new Color(0.92f, 0.92f, 0.95f));
         textoCreditos.lineSpacing = 1.1f;
         textoCreditos.verticalOverflow = VerticalWrapMode.Overflow;     // que nunca se corte (con las galletas crece)
     }
