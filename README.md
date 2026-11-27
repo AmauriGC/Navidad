@@ -7,6 +7,11 @@ del amanecer sin que lo atrapen.
 
 Autor: Cristian Amauri Gonzaga Castañeda.
 
+## Jugar
+
+- **En el navegador (compu o celular):** https://amaurigc.github.io/Navidad/
+- **Android (APK):** https://github.com/AmauriGC/Navidad/releases/latest
+
 ## Estructura del repositorio
 
 ```
