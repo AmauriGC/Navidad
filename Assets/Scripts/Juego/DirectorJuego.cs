@@ -180,9 +180,10 @@ public class DirectorJuego : MonoBehaviour
         Transform modelo = variante.transform;
         Quaternion rot0 = modelo.localRotation; Vector3 esc0 = modelo.localScale;
         // el elfo queda en el tercio izquierdo de la pantalla (la cámara mira un poco a su lado); a la derecha va el panel
-        Vector3 mira = jugador.position + Vector3.up * 0.8f - jugador.right * 0.55f;
-        Vector3 pos = jugador.position + jugador.forward * 2.5f + Vector3.up * 1.05f - jugador.right * 0.25f;
-        camCinematica.transform.position = pos; camCinematica.transform.LookAt(mira);
+        // (la cámara se gira en cada cuadro con ColocarCamaraElfo para que el elfo caiga justo entre las flechas fijas)
+        Vector3 pos = jugador.position + jugador.forward * 2.5f + Vector3.up * 1.05f;
+        camCinematica.transform.position = pos;
+        ColocarCamaraElfo();
         // luz cálida de frente SOLO mientras eliges (en el taller la luz le llega por detrás y se ve oscuro)
         var luz = new GameObject("LuzSeleccion").AddComponent<Light>();
         luz.type = LightType.Point; luz.color = new Color(1f, 0.9f, 0.75f); luz.intensity = 2.5f; luz.range = 5f; luz.shadows = LightShadows.None;
@@ -196,36 +197,30 @@ public class DirectorJuego : MonoBehaviour
         grupoSeleccion.alpha = 1f;
 
         float tiempo = 0f, salto = 0f, empujeIzq = 0f, empujeDer = 0f;
-        float elfoX = 0.45f; Vector2 centroElfo = Vector2.zero;
         flechaIzq.rectTransform.anchorMin = flechaIzq.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         flechaDer.rectTransform.anchorMin = flechaDer.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         while (true)
         {
             tiempo += Time.deltaTime;
-            // las flechas < > se centran en DONDE SALE el elfo en la pantalla (antes iban a un % fijo del ancho
-            // y en pantallas de otra proporción el elfo quedaba corrido a la derecha)
-            var camPrincipal = Camera.main;
-            if (camPrincipal != null)
-            {
-                Vector3 sp = camPrincipal.WorldToScreenPoint(jugador.position + Vector3.up * 0.75f);
-                if (sp.z > 0f)
-                {
-                    elfoX = sp.x / Screen.width;
-                    Vector2 local;
-                    if (RectTransformUtility.ScreenPointToLocalPointInRectangle(capaSeleccion, sp, null, out local))
-                        centroElfo = Vector2.Lerp(centroElfo == Vector2.zero ? local : centroElfo, local, Time.deltaTime * 8f);
-                }
-            }
+            // FLECHAS FIJAS: el elfo va en ElfoX del ancho y las flechas a una distancia fija de él (no se recalculan
+            // con la posición del modelo, que se movía al dar el brinquito y en el teléfono quedaban muy pegadas).
+            // Es la cámara la que se acomoda para que el elfo caiga en ese punto.
+            ColocarCamaraElfo();
+            float ancho = capaSeleccion.rect.width;
+            float centroX = (ElfoX - 0.5f) * ancho;
+            float sep = Mathf.Max(260f, ancho * 0.15f);
             var kb = Keyboard.current; var m = Mouse.current;
             int cambio = 0;
             if (kb != null && (kb.aKey.wasPressedThisFrame || kb.leftArrowKey.wasPressedThisFrame)) cambio = -1;
             if (kb != null && (kb.dKey.wasPressedThisFrame || kb.rightArrowKey.wasPressedThisFrame)) cambio = 1;
             bool tocoElfo = false;
-            if (Tactil.Toque)      // clic o dedo: a los lados = cambiar; sobre el elfo = elegirlo
-            {
-                float x = Tactil.PosicionToque.x / Screen.width;
-                if (x < elfoX - 0.12f && x > elfoX - 0.32f) cambio = -1; else if (x > elfoX + 0.12f && x < elfoX + 0.32f) cambio = 1;
-                else if (Mathf.Abs(x - elfoX) <= 0.12f && tiempo > 0.3f) tocoElfo = true;
+            Vector2 toque;
+            if (Tactil.Toque && RectTransformUtility.ScreenPointToLocalPointInRectangle(capaSeleccion, Tactil.PosicionToque, null, out toque))
+            {   // clic o dedo: en una flecha (zona generosa) = cambiar; sobre el elfo = elegirlo
+                float dx = toque.x - centroX;
+                if (dx < -sep * 0.55f && dx > -sep - 170f) cambio = -1;
+                else if (dx > sep * 0.55f && dx < sep + 170f) cambio = 1;
+                else if (Mathf.Abs(dx) <= sep * 0.55f && tiempo > 0.3f) tocoElfo = true;
             }
             if (cambio != 0)
             {
@@ -249,10 +244,9 @@ public class DirectorJuego : MonoBehaviour
             empujeIzq = Mathf.MoveTowards(empujeIzq, 0f, Time.deltaTime * 4f); empujeDer = Mathf.MoveTowards(empujeDer, 0f, Time.deltaTime * 4f);
             // la flecha > ya no puede caer encima del panel: el panel se acomoda A LA DERECHA de la flecha
             // (antes el panel iba fijo al 70% del ancho y su orilla izquierda tapaba la >)
-            const float sepFlecha = 250f;
-            flechaIzq.rectTransform.anchoredPosition = new Vector2(centroElfo.x - sepFlecha - 30f * empujeIzq, centroElfo.y);
-            flechaDer.rectTransform.anchoredPosition = new Vector2(centroElfo.x + sepFlecha + 30f * empujeDer, centroElfo.y);
-            AcomodarPanelElfo(centroElfo.x + sepFlecha + 30f + 70f);
+            flechaIzq.rectTransform.anchoredPosition = new Vector2(centroX - sep - 30f * empujeIzq, 0f);
+            flechaDer.rectTransform.anchoredPosition = new Vector2(centroX + sep + 30f * empujeDer, 0f);
+            AcomodarPanelElfo(centroX + sep + 100f);
             float brillo = 0.6f + 0.4f * Mathf.Sin(tiempo * 3f);
             flechaIzq.color = flechaDer.color = new Color(1f, 0.85f, 0.45f, brillo);
             if (listo) break;
@@ -272,6 +266,18 @@ public class DirectorJuego : MonoBehaviour
         yield return SeleccionDificultad();
         yield return UIFundido.A(1f, 0.5f);
         Destroy(luz.gameObject);
+    }
+
+    /// <summary>Los créditos crecen (galletas, dificultad, medalla) y en pantallas anchas de teléfono el lienzo mide
+    /// ~966 de alto: se cortaban arriba y abajo. Se mide el alto real del texto y se achica para que quepa todo.</summary>
+    void AjustarCreditos()
+    {
+        if (textoCreditos == null) return;
+        var rt = textoCreditos.rectTransform;
+        float alto = textoCreditos.preferredHeight;
+        float disponible = capaCreditos.rect.height - 70f;
+        rt.sizeDelta = new Vector2(rt.sizeDelta.x, alto);
+        rt.localScale = Vector3.one * Mathf.Min(1f, disponible / Mathf.Max(1f, alto));
     }
 
     /// <summary>Pantalla de dificultad (después de elegir elfo). Se recuerda la última elegida.</summary>
@@ -322,6 +328,23 @@ public class DirectorJuego : MonoBehaviour
             tarjetas[k].color = sel ? new Color(c.r * 0.3f, c.g * 0.3f, c.b * 0.3f, 1f) : new Color(0.06f, 0.07f, 0.12f, 1f);
             tarjetasTexto[k].color = new Color(0.88f, 0.92f, 1f, sel ? 1f : 0.5f);
         }
+    }
+
+    /// <summary>Fracción del ancho de la pantalla donde se ve el elfo en "Elige a tu elfo".</summary>
+    const float ElfoX = 0.28f;
+
+    /// <summary>Gira la cámara de la selección para que el elfo (a media altura) quede en ElfoX del ancho, sin
+    /// importar la proporción de la pantalla (16:9 en PC, 20:9 en teléfono).</summary>
+    void ColocarCamaraElfo()
+    {
+        var cam = camCinematica.transform;
+        Vector3 objetivo = jugador.position + Vector3.up * 0.8f;
+        Vector3 haciaElfo = objetivo - cam.position;
+        float aspecto = (float)Screen.width / Mathf.Max(1, Screen.height);
+        float tanMedioH = Mathf.Tan(camCinematica.Lens.FieldOfView * 0.5f * Mathf.Deg2Rad) * aspecto;
+        // ángulo del elfo respecto al centro de la vista: negativo = a la izquierda
+        float angulo = Mathf.Atan((2f * ElfoX - 1f) * tanMedioH) * Mathf.Rad2Deg;
+        cam.rotation = Quaternion.AngleAxis(-angulo, Vector3.up) * Quaternion.LookRotation(haciaElfo);
     }
 
     /// <summary>Pone el panel del elfo entre 'orillaIzq' (justo después de la flecha >) y la orilla derecha de la
@@ -504,6 +527,7 @@ public class DirectorJuego : MonoBehaviour
             var img = UIConstructor.Rect("Medalla", capaCreditos, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(420, 420), new Vector2(-260, 40)).gameObject.AddComponent<RawImage>();
             img.texture = rtMedalla; img.raycastTarget = false;
         }
+        AjustarCreditos();
         GestorAudio.Efecto("medalla", 0.8f, 0f);
         Juego.Estado = Juego.Modo.Final;
         CamaraOrbitaMouse.BloquearCursor(false);
