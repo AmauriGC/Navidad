@@ -149,6 +149,33 @@ public static class UIConstructor
         return s;
     }
 
+    /// <summary>Botón de texto (fondo redondeado + letrero). 'alClic' se llama al presionarlo.</summary>
+    public static Button Boton(Transform padre, string texto, Vector2 tam, Vector2 pos, System.Action alClic, int tamLetra = 30)
+    {
+        AsegurarEventSystem();
+        var rt = Rect("Boton_" + texto, padre, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), tam, pos);
+        var img = Imagen(rt, new Color(1f, 1f, 1f, 0.14f)); img.raycastTarget = true;
+        var txt = Texto(PantallaCompleta("Texto", rt), texto, tamLetra, Color.white);
+        txt.raycastTarget = false;
+        var b = rt.gameObject.AddComponent<Button>();
+        b.targetGraphic = img;
+        var col = b.colors; col.highlightedColor = new Color(1f, 0.9f, 0.6f); col.pressedColor = new Color(1f, 0.75f, 0.3f); b.colors = col;
+        if (alClic != null) b.onClick.AddListener(() => alClic());
+        return b;
+    }
+
+    /// <summary>Fila "Etiqueta   <  valor  >" para elegir entre opciones con clic. Devuelve el Text del valor.</summary>
+    public static Text Selector(Transform padre, string etiqueta, Vector2 pos, System.Action<int> paso)
+    {
+        var fila = Rect("Fila_" + etiqueta, padre, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(900, 56), pos);
+        Texto(Rect("Etiqueta", fila, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(330, 56), new Vector2(165, 0)),
+              etiqueta, 34, Color.white, TextAnchor.MiddleRight);
+        var zona = Rect("Selector", fila, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(480, 48), new Vector2(370 + 240, 0));
+        Boton(zona, "<", new Vector2(56, 48), new Vector2(-212, 0), () => paso(-1), 34);
+        Boton(zona, ">", new Vector2(56, 48), new Vector2(212, 0), () => paso(1), 34);
+        return Texto(Rect("Valor", zona, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(340, 48)), "", 32, new Color(1f, 0.85f, 0.45f));
+    }
+
     static Sprite circulo, flecha;
     /// <summary>Círculo suave dibujado pixel por pixel (no hace falta una imagen en el proyecto).</summary>
     public static Sprite SpriteCirculo()
