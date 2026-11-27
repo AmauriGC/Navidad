@@ -38,5 +38,6 @@ public static class Juego
         Perdio = false;
         Reintento = false;
         UnityEngine.Time.timeScale = 1f;
+        Graficos.Reiniciar();
     }
 }
