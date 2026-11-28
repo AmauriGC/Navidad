@@ -21,6 +21,23 @@ public static class Construir
     }
 
     public static void Android() { Hacer(BuildTarget.Android, "Builds/Android/TurnoDeNoche.apk"); }
+
+    /// <summary>Renderer móvil en Forward clásico (Forward+ dejaba la pantalla negra en algunos teléfonos) con
+    /// 8 luces por objeto (antes 4: las luces parpadeaban). LucesCercanas sigue limitando las decorativas.</summary>
+    public static void MovilForward()
+    {
+        var datos = AssetDatabase.LoadAssetAtPath<ScriptableObject>("Assets/Settings/Mobile_Renderer.asset");
+        var so = new SerializedObject(datos);
+        so.FindProperty("m_RenderingMode").intValue = 0;
+        so.ApplyModifiedPropertiesWithoutUndo();
+        var rp = AssetDatabase.LoadAssetAtPath<UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset>("Assets/Settings/Mobile_RPAsset.asset");
+        rp.maxAdditionalLightsCount = 8;
+        EditorUtility.SetDirty(datos); EditorUtility.SetDirty(rp);
+        AssetDatabase.SaveAssets();
+        Debug.Log("[Construir] Mobile_Renderer -> Forward, luces por objeto = " + rp.maxAdditionalLightsCount);
+    }
+
+    public static void AndroidForward() { MovilForward(); Android(); }
     public static void Web() { Hacer(BuildTarget.WebGL, "Builds/WebGL"); }
     public static void Linux() { Hacer(BuildTarget.StandaloneLinux64, "Builds/Linux/TurnoDeNoche.x86_64"); }
 }
