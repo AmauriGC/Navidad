@@ -304,11 +304,11 @@ public static class Guion
         "<b><color=#ffd166>Controles</color></b>\n" +
         "[WASD] caminar · [Shift] correr <color=#ff9a8a>(¡hace ruido!)</color> · [Espacio] saltar · [Mouse] cámara · [Rueda] zoom\n" +
         "[E] recoger / colocar / juntar nieve · [Q] soltar · [F] o [Clic] lanzar bola de nieve · [Esc] pausa\n" +
-        "<size=22><color=#9fe0ff>Difícil/Imposible: recarga la linterna junto a la chimenea o un farol · refúgiate de las ventiscas · rodea las cajas sorpresa</color></size>";
+        "<size=22><color=#9fe0ff>Difícil/Imposible: recarga la linterna junto a la chimenea o un farol · refúgiate de las ventiscas · rodea las cajas sorpresa · afuera siguen tus huellas</color></size>";
 
     public const string ControlesTactiles =
         "<b><color=#ffd166>Controles</color></b>\n" +
         "Joystick (izquierda) caminar · empújalo a fondo para correr <color=#ff9a8a>(¡hace ruido!)</color> · arrastra a la derecha: cámara · pellizca: zoom\n" +
         "[E] recoger / colocar / juntar nieve · [Q] soltar · [Bola] lanzar · [Saltar] · [II] pausa\n" +
-        "<size=22><color=#9fe0ff>Difícil/Imposible: recarga la linterna junto a la chimenea o un farol · refúgiate de las ventiscas · rodea las cajas sorpresa</color></size>";
+        "<size=22><color=#9fe0ff>Difícil/Imposible: recarga la linterna junto a la chimenea o un farol · refúgiate de las ventiscas · rodea las cajas sorpresa · afuera siguen tus huellas</color></size>";
 }
