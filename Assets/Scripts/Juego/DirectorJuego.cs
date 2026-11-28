@@ -714,7 +714,7 @@ public class DirectorJuego : MonoBehaviour
         // y el diálogo empieza cuando el banner ya se fue
         GestorAudio.Efecto("poder", 0.8f, 0f);
         yield return UIBanner.Esperar("★ FINAL ESPECIAL ★", "Las 10 galletas de jengibre", "", 2.8f, new Color(1f, 0.78f, 0.35f));
-        yield return UIHistoria.Esperar(Guion.FinalGalletas);
+        yield return UIHistoria.Esperar(VarianteElfo.Actual.nombre == "Jengibre" ? Guion.FinalGalletasJengibre : Guion.FinalGalletas);
         if (migajas != null) Destroy(migajas.gameObject, 3f);
     }
 
