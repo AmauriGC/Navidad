@@ -204,3 +204,32 @@ def rehacer(prefijo, nariz_roja):
 rehacer("Reno", False)
 rehacer("RenoNarizRoja", True)
 print("renos v2 listos")
+
+
+# ---------------------------------------------------------------- v1.5: cuello que gira sin "romperse"
+def cuello_redondo(nc="Reno_Cuerpo", nh="Reno_Cabeza", eje=(0, -0.3, 0.95)):
+    """La cabeza voltea sobre el EJE DEL CUELLO (RenoAnimador usa el mismo eje). La punta del cuello del CUERPO
+    se jala hacia ese eje (radio máx 0.24 m en el collar → 0.085 m donde empieza la cabeza): un cuerpo de revolución
+    alrededor del eje de giro no cambia al girar, así que se queda escondido dentro del cuello de la cabeza.
+    El collar no se toca. Correr con nc/nh = RenoNarizRoja_Cuerpo/_Cabeza también."""
+    from mathutils import Vector
+    def ss(a, b, x):
+        t = max(0, min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t)
+    c = bpy.data.objects[nc]; h = bpy.data.objects[nh]; me = c.data
+    ci = [i for i, m in enumerate(me.materials) if m.name == "Ren_Collar"]
+    collar = set()
+    for f in me.polygons:
+        if f.material_index in ci: collar.update(f.vertices)
+    mw = c.matrix_world; mi = mw.inverted()
+    P = h.matrix_world.translation.copy(); A = Vector(eje).normalized()
+    n = 0
+    for v in me.vertices:
+        if v.index in collar: continue
+        p = mw @ v.co; d = p - P; t = d.dot(A)
+        if t < 0.06: continue
+        rv = d - A * t; r = rv.length
+        rmax = 0.24 + (0.085 - 0.24) * ss(0.06, 0.2, t)
+        if r > rmax:
+            v.co = mi @ (P + A * t + rv * (rmax / r)); n += 1
+    me.update()
+    return n
