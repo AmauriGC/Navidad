@@ -56,23 +56,19 @@ public class CharolaGalletas : Interactuable
     }
 
     // ------------------------------------------------------------------ Interactuable
-    public override bool PuedeInteractuar(Interactor quien) { return !abierto && !Galleta.CharolaLlena && charola != null; }
+    public override bool PuedeInteractuar(Interactor quien) { return !abierto && charola != null; }
 
     public override string Texto(Interactor quien)
     {
         int n = Galleta.EnBolsa.Count;
-        return n > 0 ? "Acomodar galletas (" + n + ")" : "Ver la charola de Santa";
+        return n > 0 && !Galleta.CharolaLlena ? "Acomodar galletas (" + n + ")" : "Ver la charola de Santa";
     }
 
     public override void Interactuar(Interactor quien)
     {
-        if (Galleta.EnBolsa.Count == 0)
-        {
-            UIAviso.Mensaje("La charola de Santa: 10 huecos con forma de galleta.\n" +
-                            (Galleta.Puestas.Count > 0 ? "Ya hay " + Galleta.Puestas.Count + " acomodadas. " : "") + "Busca las galletas NOCHEBUENA por el pueblo.", 5f);
-            return;
-        }
-        StartCoroutine(Minijuego());
+        if (Galleta.EnBolsa.Count == 0 && !Galleta.CharolaLlena)
+            UIAviso.Mensaje((Galleta.Puestas.Count > 0 ? "Ya hay " + Galleta.Puestas.Count + " acomodadas. " : "") + "Busca las galletas NOCHEBUENA por el pueblo.", 4f);
+        StartCoroutine(Minijuego());   // sin galletas en la bolsa (o con la charola llena) solo se ve
     }
 
     // ------------------------------------------------------------------ el minijuego
@@ -89,7 +85,7 @@ public class CharolaGalletas : Interactuable
         cerebro = cam.GetComponent<CinemachineBrain>();
         if (cerebro) cerebro.enabled = false;
         Vector3 p0 = cam.transform.position; Quaternion r0 = cam.transform.rotation; float fov0 = cam.fieldOfView;
-        Vector3 p1 = charola.position + new Vector3(0f, alturaCamara, -0.12f); Quaternion r1 = Quaternion.Euler(90f, 0f, 0f);
+        Vector3 p1 = charola.position + new Vector3(0f, alturaCamara, -0.2f); Quaternion r1 = Quaternion.Euler(90f, 0f, 0f);
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f)
         {
             float k = t * t * (3f - 2f * t);
@@ -99,20 +95,21 @@ public class CharolaGalletas : Interactuable
         }
         cam.transform.SetPositionAndRotation(p1, r1); cam.fieldOfView = 55f;
 
-        // un foquito cálido arriba de la charola: de noche, vista desde arriba, las galletas casi no se veían
+        // un foquito cálido MUY suave arriba de la charola (con más luz las galletas se veían deslavadas)
         var foco = new GameObject("Luz_Charola").AddComponent<Light>();
-        foco.type = LightType.Point; foco.color = new Color(1f, 0.85f, 0.62f); foco.intensity = 2.6f; foco.range = 2.6f; foco.shadows = LightShadows.None;
-        foco.transform.position = charola.position + Vector3.up * 0.9f;
+        foco.type = LightType.Point; foco.color = new Color(1f, 0.82f, 0.6f); foco.intensity = 0.3f; foco.range = 3.2f; foco.shadows = LightShadows.None;
+        foco.transform.position = charola.position + Vector3.up * 1.8f;
         ConstruirUI();
         SacarGalletas();
         GestorAudio.Efecto("papel", 0.6f, 0.1f);
         float auto = 0f;
+        bool traiaGalletas = bolsa.Count > 0;
         while (!salir)
         {
             if (reloj != null) reloj.Avanzar(Time.deltaTime);   // la noche sigue avanzando
             if (Juego.PruebaAutomatica) { auto += Time.deltaTime; if (auto > 0.4f && bolsa.Count > 0 && !completando) { auto = 0f; var pz = bolsa[0]; pz.giro = 0; Encajar(pz); } }
             else Entrada();
-            if (bolsa.Count == 0 && !completando && Galleta.Puestas.Count < 10) { yield return new WaitForSeconds(0.8f); salir = true; }
+            if (traiaGalletas && bolsa.Count == 0 && !completando && Galleta.Puestas.Count < 10) { yield return new WaitForSeconds(0.8f); salir = true; }
             yield return null;
         }
         while (completando) yield return null;
@@ -121,6 +118,7 @@ public class CharolaGalletas : Interactuable
         foreach (var pz in bolsa) Destroy(pz.go);
         bolsa.Clear(); agarrada = null; ultima = null;
         if (capa) Destroy(capa.gameObject);
+        if (servilleta) Destroy(servilleta);
         if (foco) Destroy(foco.gameObject);
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.5f)
         {
@@ -131,16 +129,32 @@ public class CharolaGalletas : Interactuable
         }
         cam.fieldOfView = fov0;
         if (cerebro) cerebro.enabled = true;
-        if (Galleta.CharolaLlena) yield return Premio();
+        if (Galleta.CharolaLlena && !premioDado) { premioDado = true; yield return Premio(); }
         Juego.Estado = Juego.Modo.Jugando;
         CamaraOrbitaMouse.BloquearCursor(true);
         abierto = false;
     }
 
+    GameObject servilleta; bool premioDado;
+
     void SacarGalletas()
     {
         var lista = new List<int>(Galleta.EnBolsa); lista.Sort();
+        if (Galleta.CharolaLlena) lista.Clear();
         float ancho = 0.21f, x0 = -(lista.Count - 1) * ancho / 2f;
+        if (lista.Count > 0)
+        {
+            // una servilleta de papel donde descansan las galletas de la bolsa (arriba del vaso y la notita de la mesa)
+            servilleta = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            servilleta.name = "Servilleta"; Destroy(servilleta.GetComponent<Collider>());
+            servilleta.transform.position = charola.position + new Vector3(0f, 0f, -0.53f) + Vector3.up * (alturaPlano + 0.13f - charola.position.y);
+            servilleta.transform.localScale = new Vector3(lista.Count * ancho + 0.12f, 0.006f, 0.27f);
+            var mr = servilleta.GetComponent<MeshRenderer>(); mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            Material papel = null;
+            var mesita = GameObject.Find("Mesita_Charola");
+            if (mesita) foreach (var m in mesita.GetComponent<Renderer>().sharedMaterials) if (m != null && m.name.StartsWith("Nota_Papel")) papel = m;
+            if (papel != null) mr.sharedMaterial = papel;
+        }
         for (int k = 0; k < lista.Count; k++)
         {
             int idx = lista[k];
@@ -151,7 +165,7 @@ public class CharolaGalletas : Interactuable
             pz.go.name = "Charola_" + modelo.name;
             pz.go.transform.localScale = Vector3.one * escalaEnCharola;
             pz.casa = charola.position + new Vector3(x0 + k * ancho, 0f, -0.53f);
-            pz.casa.y = alturaPlano + 0.02f;
+            pz.casa.y = alturaPlano + 0.16f;     // encima de la servilleta
             pz.go.transform.position = pz.casa;
             Orientar(pz);
             bolsa.Add(pz);
@@ -193,18 +207,24 @@ public class CharolaGalletas : Interactuable
 
         if (baja && !sobreUI)
         {
-            float mejor = 0.15f * 0.15f;
+            // se elige EN LA PANTALLA (donde se ve la galleta), no en el piso: así no hay que picarle "abajo" de ella
+            float mejor = Screen.height * 0.07f;
             foreach (var pz in bolsa)
             {
-                float d = (Plano(pz.go.transform.position) - Plano(punto)).sqrMagnitude;
-                if (d < mejor) { mejor = d; agarrada = pz; }
+                Vector2 c = cam.WorldToScreenPoint(Centro(pz.go));
+                float d = Vector2.Distance(c, pos);
+                if (d < mejor) { mejor = d; agarrada = pz; desfase = c - pos; }
             }
             if (agarrada != null) { ultima = agarrada; GestorAudio.Efecto("tick", 0.5f, 0.1f); }
         }
         if (agarrada != null && presionado)
         {
-            Vector3 meta = new Vector3(punto.x, alturaPlano + 0.06f, punto.z);
-            agarrada.go.transform.position = Vector3.Lerp(agarrada.go.transform.position, meta, Time.unscaledDeltaTime * 25f);
+            Vector3 p2;
+            if (PuntoEnPlano(pos + desfase, out p2))   // la galleta se queda pegada al puntero justo donde la agarraste
+            {
+                Vector3 meta = new Vector3(p2.x, alturaPlano + 0.06f, p2.z);
+                agarrada.go.transform.position = Vector3.Lerp(agarrada.go.transform.position, meta, Time.unscaledDeltaTime * 25f);
+            }
         }
         if (agarrada != null && sube) { Soltar(agarrada); agarrada = null; }
     }
@@ -338,21 +358,36 @@ public class CharolaGalletas : Interactuable
     }
 
     static Vector3 Plano(Vector3 v) { v.y = 0f; return v; }
+    Vector2 desfase;
+    static Vector3 Centro(GameObject g) { var r = g.GetComponentInChildren<Renderer>(); return r != null ? r.bounds.center : g.transform.position; }
 
     void ConstruirUI()
     {
         capa = UIConstructor.Capa("Charola", 40);
-        var rt = UIConstructor.Rect("Ayuda", capa, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(1500, 110), new Vector2(0, -70));
-        textoAyuda = UIConstructor.Texto(rt, Ayuda(), 28, Color.white);
+        // panel redondeado con la ayuda (arriba al centro) y un titulito navideño
+        var fondo = UIConstructor.Rect("Panel", capa, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(1240, 120), new Vector2(0, -78));
+        UIConstructor.Redondear(UIConstructor.Imagen(fondo, new Color(0.08f, 0.04f, 0.04f, 0.72f)), 1f);
+        UIConstructor.Sombra(UIConstructor.Titulo(UIConstructor.Rect("Titulo", fondo, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(1200, 56), new Vector2(0, -30)),
+                                                  Galleta.CharolaLlena ? "La charola de Santa · ¡NOCHEBUENA!" : "La charola de Santa", 40, new Color(1f, 0.83f, 0.42f)), 2f);
+        var rt = UIConstructor.Rect("Ayuda", fondo, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(1200, 50), new Vector2(0, 30));
+        textoAyuda = UIConstructor.Texto(rt, Ayuda(), 26, Color.white);
         UIConstructor.Sombra(textoAyuda, 2f);
-        var b1 = UIConstructor.Boton(capa, "Girar", new Vector2(190, 70), Vector2.zero, () => Girar(), 30);
-        var r1 = (RectTransform)b1.transform; r1.anchorMin = r1.anchorMax = new Vector2(1f, 1f); r1.anchoredPosition = new Vector2(-130, -70);
-        var b2 = UIConstructor.Boton(capa, "Listo", new Vector2(190, 70), Vector2.zero, () => salir = true, 30);
-        var r2 = (RectTransform)b2.transform; r2.anchorMin = r2.anchorMax = new Vector2(1f, 1f); r2.anchoredPosition = new Vector2(-130, -155);
+        System.Action<Button, Color> pintar = (b, c) => { ((Image)b.targetGraphic).color = c; var cb = b.colors; cb.highlightedColor = Color.Lerp(c, Color.white, 0.25f); cb.pressedColor = Color.Lerp(c, Color.black, 0.2f); b.colors = cb; };
+        if (bolsa.Count > 0 || Galleta.EnBolsa.Count > 0)
+        {
+            var b1 = UIConstructor.Boton(capa, "Girar", new Vector2(200, 72), Vector2.zero, () => Girar(), 30);
+            var r1 = (RectTransform)b1.transform; r1.anchorMin = r1.anchorMax = new Vector2(1f, 1f); r1.anchoredPosition = new Vector2(-135, -72);
+            pintar(b1, new Color(0.85f, 0.6f, 0.15f, 0.95f));
+        }
+        var b2 = UIConstructor.Boton(capa, "Listo", new Vector2(200, 72), Vector2.zero, () => salir = true, 30);
+        var r2 = (RectTransform)b2.transform; r2.anchorMin = r2.anchorMax = new Vector2(1f, 1f); r2.anchoredPosition = new Vector2(-135, -158);
+        pintar(b2, new Color(0.2f, 0.6f, 0.3f, 0.95f));
     }
 
     string Ayuda()
     {
+        if (Galleta.CharolaLlena || (bolsa.Count == 0 && Galleta.EnBolsa.Count == 0))
+            return Galleta.CharolaLlena ? "¡Todas en su lugar! · <b>[Esc]</b> o <b>Listo</b> para salir" : "Todavía no traes galletas · <b>[Esc]</b> o <b>Listo</b> para salir";
         return Tactil.Activo
             ? "Arrastra cada galleta a su hueco · botón <b>Girar</b> para enderezar la letra"
             : "Arrastra cada galleta a su hueco con el mouse · <b>[Rueda]</b> o <b>[Clic derecho]</b> para girar · <b>[Esc]</b> salir";
