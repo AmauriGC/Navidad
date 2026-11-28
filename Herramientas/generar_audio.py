@@ -532,6 +532,72 @@ def fase9():
     rng = guardado
 
 
+
+def historia15():
+    """Sonidos de la HISTORIA 1.5 (Siete, la estrella nueva y la charola). Semilla propia 27 => no cambia ningún sonido anterior.
+    Uso: cd Herramientas && python3 -c "import generar_audio as g; g.historia15()" """
+    global rng
+    guardado = rng; rng = np.random.default_rng(27)
+    print("Historia 1.5:")
+    # DESCARGA de Siete: zumbido que sube (diente de sierra suave), chispazos, ¡ZAP! y un eco eléctrico
+    n = int(1.6 * SR); x = np.zeros(n)
+    t = tiempo(0.9); f = 70 + 330 * (t / 0.9) ** 2
+    fase = 2 * np.pi * np.cumsum(f) / SR
+    zumbido = sum(np.sin(k * fase) / k for k in range(1, 7)) * env(len(t), 0.2) * 0.35
+    mezclar(x, zumbido, 0.0)
+    for k in range(14): mezclar(x, filtro(ruido(0.015), 2500, 10000) * np.hanning(int(0.015 * SR)), rng.uniform(0.3, 0.9), rng.uniform(0.2, 0.6))
+    t = tiempo(0.35); zap = filtro(ruido(0.35), 800, 9000) * np.exp(-t * 14) + 0.5 * np.sin(2 * np.pi * np.cumsum(1800 - 1500 * t / 0.35) / SR) * np.exp(-t * 10)
+    mezclar(x, zap, 0.9, 1.0)
+    t = tiempo(0.6); mezclar(x, np.sin(2 * np.pi * 60 * t) * np.exp(-t * 7) * 0.6, 0.9)
+    guardar("descarga", x, 0.9)
+    # MELODÍA de gracias de Siete: cajita musical tierna (con un poquito de "motor" que arranca abajo)
+    melodia = [("G5", 0.5), ("E5", 0.5), ("G5", 0.5), ("C6", 1.0), ("B5", 0.5), ("A5", 0.5), ("G5", 1.0),
+               ("A5", 0.5), ("B5", 0.5), ("C6", 0.5), ("E6", 0.5), ("D6", 1.0), ("C6", 2.0)]
+    bpm = 132; pulso = 60 / bpm
+    total = sum(d for _, d in melodia) * pulso + 2.0
+    x = np.zeros(int(total * SR)); tt = 0.0
+    for nota, d in melodia:
+        mezclar(x, cajita(hz(nota), 1.4), tt, 0.7); tt += d * pulso
+    for k, (nota, ini) in enumerate((("C4", 0.0), ("G4", 2 * pulso), ("A4", 4 * pulso), ("F4", 6 * pulso), ("C4", 8 * pulso), ("G4", 10 * pulso), ("C4", 12 * pulso))):
+        mezclar(x, campana(hz(nota), 1.6), ini, 0.18)
+    guardar("melodia_siete", x, 0.75)
+    # FABRICAR la estrella: la máquina zumba bonito (sube), brillitos que suben y un acorde mágico al salir la estrella
+    n = int(3.0 * SR); x = np.zeros(n)
+    t = tiempo(2.2); f = 110 + 110 * t / 2.2
+    fase = 2 * np.pi * np.cumsum(f) / SR
+    mezclar(x, (np.sin(fase) + 0.5 * np.sin(2 * fase) + 0.25 * np.sin(3 * fase)) * env(len(t), 0.3) * np.exp(-((t - 1.8) / 0.8) ** 2 * 0.5) * 0.3, 0.0)
+    for k in range(16): mezclar(x, cajita(hz(("C6", "E6", "G6", "C7")[k % 4]) * (1 + k * 0.02), 0.5), 0.2 + k * 0.11, 0.25)
+    for k, nota in enumerate(("C5", "E5", "G5", "C6", "E6")): mezclar(x, campana(hz(nota), 1.6), 2.0 + k * 0.03, 0.35)
+    mezclar(x, cascabeles(0.8, 0.6), 2.0, 0.5)
+    guardar("fabricar", x, 0.85)
+    # ENCAJÓ: clic de galleta + campanita aguda
+    x = np.zeros(int(0.6 * SR))
+    t = tiempo(0.04); mezclar(x, filtro(ruido(0.04), 1200, 5000) * np.exp(-t * 90), 0.0, 0.8)
+    mezclar(x, cajita(hz("E6"), 0.5), 0.02, 0.6); mezclar(x, cajita(hz("A6"), 0.5), 0.07, 0.45)
+    guardar("encajo", x, 0.7)
+    # PALANCA: matraca (clics) + "clonc" metálico grave
+    n = int(0.9 * SR); x = np.zeros(n)
+    for k in range(7): mezclar(x, madera(2200 + k * 60, 0.5), k * 0.045, 0.5)
+    t = tiempo(0.5); clonc = (np.sin(2 * np.pi * 180 * t) + 0.6 * np.sin(2 * np.pi * 467 * t) + 0.3 * np.sin(2 * np.pi * 1033 * t)) * np.exp(-t * 9)
+    mezclar(x, clonc, 0.36, 0.8)
+    guardar("palanca", filtro(x, 80, 8000), 0.8)
+    # CUERDA: la llave de un juguete dando vueltas (tic-tic-tic rapidísimo que se acelera)
+    n = int(0.8 * SR); x = np.zeros(n); tt = 0.0; paso = 0.07
+    while tt < 0.72:
+        mezclar(x, madera(3200, 0.4), tt, 0.4); tt += paso; paso = max(0.025, paso * 0.88)
+    guardar("cuerda", filtro(x, 600, None), 0.5)
+    # VOZ DE SIETE: "bip", "bup", "bi-bip", "buuup" (tonos limpios con brinco de tono, como robotito)
+    def bip(f0, f1, dur):
+        t = tiempo(dur); f = f0 + (f1 - f0) * t / dur
+        return (np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.25 * np.sin(4 * np.pi * np.cumsum(f) / SR)) * env(len(t), 0.008, dur * 0.9)
+    guardar("voz_siete1", bip(880, 1320, 0.09), 0.5)
+    guardar("voz_siete2", bip(700, 520, 0.11), 0.5)
+    x = np.zeros(int(0.22 * SR)); mezclar(x, bip(990, 990, 0.07), 0.0); mezclar(x, bip(1320, 1500, 0.08), 0.1)
+    guardar("voz_siete3", x, 0.5)
+    guardar("voz_siete4", bip(600, 900, 0.16), 0.5)
+    rng = guardado
+
+
 if __name__ == "__main__":
     print("Música:")
     guardar("musica_titulo", noche_de_paz(), 0.8)
