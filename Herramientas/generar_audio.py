@@ -598,6 +598,33 @@ def historia15():
     rng = guardado
 
 
+def detallitos():
+    """Sonidos de los DETALLITOS v1.5 (cascanueces, bola de nieve, hielo, pausa). Semilla propia 28 => no cambia ningún
+    sonido anterior. Uso: cd Herramientas && python3 -c "import generar_audio as g; g.detallitos()" """
+    global rng
+    guardado = rng; rng = np.random.default_rng(28)
+    print("Detallitos:")
+    # ARRANQUE del cascanueces: la llave de cuerda gira (tic-tic que se acelera), el resorte rechina,
+    # CLAC-CLAC de la mandíbula y dos pisotones de marcha ("¡uno, dos!")
+    n = int(1.7 * SR); x = np.zeros(n); tt = 0.0; paso = 0.09
+    while tt < 0.75:
+        mezclar(x, madera(2600, 0.5), tt, 0.55); tt += paso; paso = max(0.03, paso * 0.86)
+    t = tiempo(0.5); mezclar(x, np.sin(2 * np.pi * np.cumsum(700 + 500 * np.sin(2 * np.pi * 9 * t)) / SR) * env(len(t), 0.05, 0.45) * 0.25, 0.55)
+    mezclar(x, madera(1200, 1.3), 0.85); mezclar(x, madera(950, 1.2), 0.97)
+    for k in range(2):
+        t = tiempo(0.3); golpe = np.sin(2 * np.pi * (95 - k * 10) * t) * np.exp(-t * 22) + 0.6 * filtro(ruido(0.3), 300, 2500) * np.exp(-t * 35)
+        mezclar(x, golpe, 1.15 + k * 0.28, 0.95)
+    guardar("cas_arranque", x, 0.85)
+    # PASOS más pesados: bota de madera (golpe grave + toc hueco), se oyen desde más lejos
+    for i in range(2):
+        t = tiempo(0.25); p = (1.0, 0.9)[i]
+        x = np.sin(2 * np.pi * 85 * p * t) * np.exp(-t * 28) + 0.8 * np.sin(2 * np.pi * 240 * p * t) * np.exp(-t * 45)
+        x = x + 0.6 * filtro(ruido(0.25), 400 * p, 2600 * p) * np.exp(-t * 50)
+        x = x + 0.25 * np.sin(2 * np.pi * np.cumsum(1100 + 300 * np.sin(2 * np.pi * 16 * t)) / SR) * env(len(t), 0.01, 0.1)
+        guardar(f"paso_cas{i + 3}", x, 0.8)
+    rng = guardado
+
+
 if __name__ == "__main__":
     print("Música:")
     guardar("musica_titulo", noche_de_paz(), 0.8)
