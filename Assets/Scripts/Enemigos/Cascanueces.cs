@@ -96,9 +96,9 @@ public class Cascanueces : MonoBehaviour
             GestorAudio.Efecto3D("despertar", p);
             GestorAudio.Efecto("susto", 0.55f, 0f);          // golpe dramático: ¡despertó uno!
         }
-        else if (nuevo == Estado.Sospecha) GestorAudio.Efecto3D("clac", p);
-        else if (nuevo == Estado.Persecucion) GestorAudio.Efecto("alerta", 0.7f);
-        else if (EstadoActual == Estado.Persecucion && nuevo == Estado.Patrulla) GestorAudio.Efecto("escapaste", 0.6f);   // te perdió
+        else if (nuevo == Estado.Sospecha) { GestorAudio.Efecto3D("clac", p, 1.3f); Gritar(Guion.GritoSospecha); }
+        else if (nuevo == Estado.Persecucion) { GestorAudio.Efecto("alerta", 0.7f); GestorAudio.Efecto3D("clac", p, 1.3f); Gritar(Guion.GritoVer, true); }
+        else if (EstadoActual == Estado.Persecucion && nuevo == Estado.Patrulla) { GestorAudio.Efecto("escapaste", 0.6f); Gritar(Guion.GritoPerder); }   // te perdió
         EstadoActual = nuevo;
         temporizador = 0f;
         AplicarEstado(nuevo);
@@ -155,6 +155,7 @@ public class Cascanueces : MonoBehaviour
             return;
         }
         if (EstadoActual == Estado.Patrulla || EstadoActual == Estado.Persecucion) agente.isStopped = false;
+        if (Despierto && !arrancado) Arrancar();
 
         temporizador += Time.deltaTime;
         Pasos();
@@ -242,9 +243,10 @@ public class Cascanueces : MonoBehaviour
         float zancada = EstadoActual == Estado.Persecucion ? 0.9f : 0.7f;
         if (distanciaPaso < zancada) return;
         distanciaPaso = 0f; pie = 1 - pie;
-        if (fuentePasos == null) fuentePasos = GestorAudio.FuentePropia(gameObject, 1.5f, 16f);
+        if (fuentePasos == null) { fuentePasos = GestorAudio.FuentePropia(gameObject, 3f, 24f); fuentePasos.priority = 64; }
         fuentePasos.pitch = (EstadoActual == Estado.Persecucion ? 1.1f : 0.95f) + Random.Range(-0.05f, 0.05f);
-        fuentePasos.PlayOneShot(Resources.Load<AudioClip>("Audio/paso_cas" + (pie + 1)), 0.55f * GestorAudio.VolumenEfectos);
+        // detallitos v1.5: bota de madera más pesada y más fuerte (paso_cas3/4); antes casi no se oían
+        fuentePasos.PlayOneShot(Resources.Load<AudioClip>("Audio/paso_cas" + (pie + 3)), 0.95f * GestorAudio.VolumenEfectos);
     }
 
     // ------------------------------------------------------------------ acciones
@@ -267,6 +269,7 @@ public class Cascanueces : MonoBehaviour
         }
         UIFundido.Destello(new Color(0.8f, 0.05f, 0.05f, 0.45f));
         GestorAudio.Efecto("atrapado", 0.8f, 0f);
+        Gritar(Guion.GritoAtrapar, true);
         TemblorCamara.Sacudir(0.9f);
         UIAviso.Mensaje(quitado != null
             ? "¡El " + nombre + " te quitó la " + quitado + " y la volvió a esconder!"
@@ -302,6 +305,7 @@ public class Cascanueces : MonoBehaviour
         if (!Despierto) return;
         GestorAudio.Efecto3D("aturdido", transform.position + Vector3.up);
         CambiarA(Estado.Aturdido);
+        Gritar(Guion.GritoAturdido, true);
     }
 
     /// <summary>Con el poder de galleta (las 10 galletas) las bolas de nieve aturden el doble.</summary>
@@ -355,6 +359,7 @@ public class Cascanueces : MonoBehaviour
     public void DarCuerda(float factor, float segundos)
     {
         factorCuerda = factor; cuerdaHasta = Time.time + segundos;
+        if (Despierto) Gritar(Guion.GritoDescarga, true);
         AjustarVelocidad();
         CancelInvoke(nameof(AjustarVelocidad));
         Invoke(nameof(AjustarVelocidad), segundos + 0.05f);   // al acabarse la cuerda vuelve a su velocidad normal
@@ -365,6 +370,28 @@ public class Cascanueces : MonoBehaviour
         if (agente == null || !agente.isOnNavMesh) return;
         if (EstadoActual == Estado.Patrulla) agente.speed = velocidadPatrulla * FactorCuerda;
         else if (EstadoActual == Estado.Persecucion) agente.speed = velocidadPersecucion * FactorCuerda;
+    }
+
+    // ------------------------------------------------------------------ detallitos v1.5: voz y arranque
+    bool arrancado;
+
+    /// <summary>La primera vez que se mueve después de despertar: la llave da cuerda, CLAC-CLAC y "¡Uno, dos!".
+    /// (Al despertar suele estar la cinemática; este sonido sale cuando de verdad empieza a caminar.)</summary>
+    void Arrancar()
+    {
+        arrancado = true;
+        if (fuenteVoz == null) fuenteVoz = GestorAudio.FuentePropia(gameObject, 3f, 26f);
+        var c = Resources.Load<AudioClip>("Audio/cas_arranque");
+        if (c != null) fuenteVoz.PlayOneShot(c, 1f * GestorAudio.VolumenEfectos);
+        Gritar(new[] { "¡Uno, dos! ¡Uno, dos!" }, true);
+    }
+    AudioSource fuenteVoz;
+
+    /// <summary>Globito sobre la cabeza + voz de madera (ver GloboCascanueces).</summary>
+    void Gritar(string[] frases, bool forzar = false)
+    {
+        if (frases == null || frases.Length == 0) return;
+        GloboCascanueces.Decir(gameObject, frases, 2.45f, forzar);
     }
 
     /// <summary>Descarga GRAVE (Difícil/Imposible): si estaba dormido, despierta antes de tiempo.</summary>
