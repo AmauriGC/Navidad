@@ -182,9 +182,12 @@ public class Cascanueces : MonoBehaviour
 
             case Estado.Persecucion:
                 Alerta = Mathf.MoveTowards(Alerta, 1f, Time.deltaTime * 3f);
+                // Difícil/Imposible: si te escapas AFUERA no se rinden en la puerta, siguen tus huellas en la nieve
+                bool rastreando = !loVeo && Rastreando();
+                if (rastreando) ultimaPosVista = jugador.position;
                 agente.SetDestination(ultimaPosVista);
                 if (Vector3.Distance(transform.position, jugador.position) < distanciaAtrapar) { Atrapar(); break; }
-                if (Time.time - ultimaVezVisto > olvidarTras) CambiarA(Estado.Patrulla);
+                if (Time.time - ultimaVezVisto > olvidarTras + (rastreando || JugadorAfuera() ? rastreoAfuera : 0f)) CambiarA(Estado.Patrulla);
                 break;
 
             case Estado.Aturdido:
@@ -327,6 +330,7 @@ public class Cascanueces : MonoBehaviour
         velocidadPatrulla *= d.velocidad; velocidadPersecucion *= d.velocidad;
         distanciaVision *= d.vista; distanciaOido *= d.oido;
         duracionAturdido *= d.aturdido;
+        rastreoAfuera = d.rastreoAfuera;
         // despertar antes/después se mueve por ETAPAS completas (no por piezas): la presentación del cascanueces
         // ("¡ha despertado!") sale al terminar una etapa; si despertaba a media etapa ya andaba suelto antes de presentarlo.
         if (d.despertarAntes != 0 && ArbolNavidad.Instancia != null)
@@ -370,6 +374,24 @@ public class Cascanueces : MonoBehaviour
         if (agente == null || !agente.isOnNavMesh) return;
         if (EstadoActual == Estado.Patrulla) agente.speed = velocidadPatrulla * FactorCuerda;
         else if (EstadoActual == Estado.Persecucion) agente.speed = velocidadPersecucion * FactorCuerda;
+    }
+
+    // ------------------------------------------------------------------ detallitos v1.5: persecución afuera
+    /// <summary>Segundos que siguen tus huellas cuando sales (lo pone la dificultad; 0 = no salen tras de ti).</summary>
+    [HideInInspector] public float rastreoAfuera;
+    float revisarAfuera; bool afueraCache;
+
+    bool JugadorAfuera()
+    {
+        if (rastreoAfuera <= 0f || jugador == null) return false;
+        if (Time.time > revisarAfuera) { revisarAfuera = Time.time + 0.3f; afueraCache = !Ventisca.EstaBajoTecho(jugador.position); }
+        return afueraCache;
+    }
+
+    /// <summary>¿Te perdió de vista hace poco y estás afuera? Entonces va directo a donde estás (huellas).</summary>
+    bool Rastreando()
+    {
+        return rastreoAfuera > 0f && Time.time - ultimaVezVisto < rastreoAfuera && JugadorAfuera();
     }
 
     // ------------------------------------------------------------------ detallitos v1.5: voz y arranque

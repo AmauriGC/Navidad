@@ -34,6 +34,7 @@ public static class Dificultad
         public int cajasSorpresa;       // cuántas cajas sorpresa se prenden (0 = ninguna)
         public float segundosDescarga;  // tiempo entre descargas de Siete (historia 1.5)
         public bool descargaGrave;      // Difícil/Imposible: despiertan cascanueces y la descarga 10 es derrota
+        public float rastreoAfuera;     // v1.5: segundos que siguen tus HUELLAS si te escapas afuera (0 = te pierden en la puerta)
     }
 
     public const int MaxVidas = 5;
@@ -48,10 +49,10 @@ public static class Dificultad
             vidas = 0, galletasPorVida = 0, velocidad = 1f, vista = 1f, oido = 1f, aturdido = 1f, minutos = 20f, despertarAntes = 0, oscuridad = 0f, cadenciaNevados = 0f, pilaSegundos = 0f, apagon = false, ventiscaMin = 0f, ventiscaMax = 0f, bolasMax = 5, cajasSorpresa = 0, segundosDescarga = 120f, descargaGrave = false },
         new Datos { nombre = "Difícil", color = new Color(1f, 0.7f, 0.3f),
             descripcion = "Más oscuro, nevados afuera,\nlinterna con pila, ventiscas,\napagón y cajas sorpresa.\n15 min · 3 vidas · 2 galletas = +1",
-            vidas = 3, galletasPorVida = 2, velocidad = 1.12f, vista = 1.15f, oido = 1.2f, aturdido = 0.85f, minutos = 15f, despertarAntes = 0, oscuridad = -0.55f, cadenciaNevados = 2.4f, pilaSegundos = 240f, apagon = true, ventiscaMin = 120f, ventiscaMax = 180f, bolasMax = 4, cajasSorpresa = 5, segundosDescarga = 90f, descargaGrave = true },
+            vidas = 3, galletasPorVida = 2, velocidad = 1.12f, vista = 1.15f, oido = 1.2f, aturdido = 0.85f, minutos = 15f, despertarAntes = 0, oscuridad = -0.55f, cadenciaNevados = 2.4f, pilaSegundos = 240f, apagon = true, ventiscaMin = 120f, ventiscaMax = 180f, bolasMax = 4, cajasSorpresa = 5, segundosDescarga = 90f, descargaGrave = true, rastreoAfuera = 7f },
         new Datos { nombre = "Imposible", color = new Color(1f, 0.35f, 0.35f),
             descripcion = "Casi a oscuras, pila corta,\nmás nevados y cajas, brújula\nloca y despiertan antes.\n12 min · 1 vida · 5 galletas = +1",
-            vidas = 1, galletasPorVida = 5, velocidad = 1.25f, vista = 1.3f, oido = 1.4f, aturdido = 0.7f, minutos = 12f, despertarAntes = 1, oscuridad = -1.0f, cadenciaNevados = 1.7f, pilaSegundos = 150f, apagon = true, ventiscaMin = 90f, ventiscaMax = 120f, bolasMax = 3, cajasSorpresa = 8, segundosDescarga = 60f, descargaGrave = true },
+            vidas = 1, galletasPorVida = 5, velocidad = 1.25f, vista = 1.3f, oido = 1.4f, aturdido = 0.7f, minutos = 12f, despertarAntes = 1, oscuridad = -1.0f, cadenciaNevados = 1.7f, pilaSegundos = 150f, apagon = true, ventiscaMin = 90f, ventiscaMax = 120f, bolasMax = 3, cajasSorpresa = 8, segundosDescarga = 60f, descargaGrave = true, rastreoAfuera = 11f },
     };
 
     /// <summary>Índice elegido (0 Fácil .. 3 Imposible). Por defecto Medio.</summary>
