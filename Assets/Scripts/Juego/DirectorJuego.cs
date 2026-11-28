@@ -455,8 +455,11 @@ public class DirectorJuego : MonoBehaviour
         StartCoroutine(MoverCamara(desde, hasta, centro, 4.5f, true));
         string nombre = etapa < Guion.NombreMision.Length ? Guion.NombreMision[etapa] : arbol.etapas[etapa].nombre;
         yield return UIBanner.Esperar("¡MISIÓN COMPLETADA!", nombre, "Etapa " + (etapa + 1) + " de " + arbol.etapas.Length);
-        // 2) diálogo de la etapa
+        // 2) diálogo de la etapa (en la de la maceta, Siete da su PRIMERA descarga: el tutorial)
+        var descarga = FindAnyObjectByType<DescargaMaquina>();
+        if (etapa == 0 && descarga != null) StartCoroutine(DescargaTutorial(descarga));
         if (etapa < Guion.FinEtapa.Length) yield return UIHistoria.Esperar(Guion.FinEtapa[etapa]);
+        if (etapa == 0 && descarga != null) { descarga.Empezar(); UIAviso.Mensaje(Guion.ConsejoDescarga, 6f); }
         // 3) ¿despertó algún cascanueces? lo presentamos
         int orden = 0;
         foreach (var c in cascanueces)
@@ -474,9 +477,27 @@ public class DirectorJuego : MonoBehaviour
         yield return new WaitForSeconds(1.5f);
         var e = arbol.EtapaActual;
         if (e == null) yield break;            // el árbol ya se completó (lo maneja el final)
+        // historia 1.5: si la etapa que sigue es EXTERNA y ya la cumpliste antes (curaste a Siete temprano),
+        // se completa en este momento (eso lanza otra cinemática de etapa).
+        if (e.externa && ExternaLista(e.tipoPieza)) { arbol.CompletarExterna(e.tipoPieza); yield break; }
         string cuenta = e.partes.Length > 1 ? " (" + e.partes.Length + ")" : "";
         yield return UIBanner.Esperar("NUEVO OBJETIVO", e.nombre + cuenta, e.pista, 3.5f, new Color(0.6f, 0.9f, 1f));
         EmpezarAJugar();
+    }
+
+    /// <summary>¿Ya se cumplió esta etapa externa? (historia 1.5)</summary>
+    static bool ExternaLista(string tipo)
+    {
+        if (tipo == MaquinaRota.Etapa) return MaquinaRota.Reparada;
+        if (tipo == FabricaEstrella.Etapa) return FabricaEstrella.Fabricada;
+        return false;
+    }
+
+    /// <summary>La primera descarga sale justo cuando el diálogo dice "¡ZAP!" (la 2a línea).</summary>
+    IEnumerator DescargaTutorial(DescargaMaquina d)
+    {
+        yield return new WaitForSecondsRealtime(1.6f);
+        d.Disparar(true);
     }
 
     IEnumerator PresentarCascanueces(Cascanueces c, int indice)
@@ -569,6 +590,16 @@ public class DirectorJuego : MonoBehaviour
         textoDerrotaTitulo.text = "¡Te atraparon!";
         textoDerrotaSub.text = "Te quedaste sin vidas (" + Dificultad.Actual.nombre + ")";
         StartCoroutine(Derrota(Guion.DerrotaAtrapado));
+    }
+
+    /// <summary>Historia 1.5 · Difícil / Imposible: Siete llegó a 10 descargas sin que la curaras.</summary>
+    public void Sobrecarga()
+    {
+        if (Juego.Perdio || arbol.Completo) return;
+        Juego.Perdio = true;
+        textoDerrotaTitulo.text = "¡SOBRECARGA!";
+        textoDerrotaSub.text = "Siete llegó a " + DescargaMaquina.Maximo + " descargas (" + Dificultad.Actual.nombre + ")";
+        StartCoroutine(Derrota(Guion.DerrotaSobrecarga));
     }
 
     IEnumerator Derrota() { return Derrota(Guion.LineasDerrota(MaquinaRota.Reparada)); }

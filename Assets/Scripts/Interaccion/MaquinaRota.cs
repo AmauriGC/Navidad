@@ -2,33 +2,40 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// MISIÓN OPCIONAL — LA MÁQUINA 7 DESCOMPUESTA.
-/// Le faltan 3 refacciones (Engrane, Resorte, Llave) que están tiradas por el taller, el establo y el patio.
-///  - Sin refacción en la mano: [E] Revisar -> dice cuáles faltan.
-///  - Con una refacción: [E] Instalar -> la pieza vuela a la máquina, se encoge y desaparece (Recogible.Consumir).
-///  - Con las 3: la máquina se REPARA: se apagan las chispas, la luz de alerta pasa de rojo a verde y parpadea
-///    tranquila, el ruido baja... y los cascanueces se CALMAN (Cascanueces.Calmar: más lentos, ven y oyen menos).
+/// EL CORAZÓN DE SIETE (historia 1.5) — antes "Máquina 7 descompuesta" opcional; ahora es OBLIGATORIO.
+/// Va en el motor del cuarto de máquinas (atrás de Siete). Le faltan 3 refacciones: engrane, resorte y fusible.
+///  - Sin refacción en la mano: [E] Revisar -> dice cuáles faltan y dónde buscarlas.
+///  - Con una refacción: [E] Instalar -> la pieza vuela a SU lugar en el motor y aparece puesta ahí;
+///    en la cara de Siete se prende su foco verde (Siete.Instalada).
+///  - Con las 3: Siete se CURA: se apagan las chispas, la luz de alerta pasa a verde, ya no hay descargas,
+///    los cascanueces se calman y se completa la etapa "CurarSiete" del árbol (ArbolNavidad.CompletarExterna).
+///    Si la curas antes de llegar a esa etapa, el DirectorJuego la da por buena en cuanto el árbol llegue ahí.
 /// Es otro hijo de Interactuable (igual que RenoGuirnalda), así el Interactor lo detecta solo.
+/// (Se llama MaquinaRota por compatibilidad: muchos scripts preguntan MaquinaRota.Reparada.)
 /// </summary>
 public class MaquinaRota : Interactuable
 {
+    public const string Etapa = "CurarSiete";
+
     public string tipoRefaccion = "Refaccion";
-    public string[] faltan = { "engrane", "resorte", "llave inglesa" };
+    public string[] faltan = { "engrane", "resorte", "fusible" };
+    [Tooltip("A dónde vuela cada refacción (mismo orden que 'faltan'). Si falta, vuela a 'boca'.")]
+    public Transform[] destinos;
     public ParticleSystem chispas;
     public BrilloEmisivo luzAlerta;
     public Light luzRoja;
-    public Transform boca;              // a dónde vuela la refacción al instalarla
+    public Transform boca;
 
     public static bool Reparada { get; private set; }
+    public static int Instaladas { get; private set; }
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void Reiniciar() { Reparada = false; }
+    static void Reiniciar() { Reparada = false; Instaladas = 0; }
 
-    int instaladas;
     bool[] puesta;
 
     void Awake()
     {
-        Reparada = false;
+        Reparada = false; Instaladas = 0;
         puesta = new bool[faltan.Length];
         if (boca == null) boca = transform;
     }
@@ -39,12 +46,12 @@ public class MaquinaRota : Interactuable
         return r != null && r.tipo == tipoRefaccion ? r : null;
     }
 
-    public override bool PuedeInteractuar(Interactor quien) { return !Reparada && instaladas < faltan.Length; }
+    public override bool PuedeInteractuar(Interactor quien) { return !Reparada && Instaladas < faltan.Length; }
 
     public override string Texto(Interactor quien)
     {
         var r = Refaccion(quien);
-        return r != null ? "Instalar " + r.nombreVisible + " (" + (instaladas + 1) + "/" + faltan.Length + ")" : "Revisar la Máquina 7";
+        return r != null ? "Instalar " + r.nombreVisible + " (" + (Instaladas + 1) + "/" + faltan.Length + ")" : "Revisar el corazón de Siete";
     }
 
     public override void Interactuar(Interactor quien)
@@ -54,20 +61,25 @@ public class MaquinaRota : Interactuable
         {
             string lista = "";
             for (int i = 0; i < faltan.Length; i++) if (!puesta[i]) lista += (lista == "" ? "" : ", ") + faltan[i];
-            UIAviso.Mensaje("La Máquina 7 está descompuesta: echa chispas y hace un ruidazo\nque mantiene despiertos a los cascanueces.\nLe falta: " + lista + ". (Búscalos por el taller, el establo y el patio)", 6f);
+            UIAviso.Mensaje("El corazón de Siete está fallando: por eso da descargas.\nLe falta: " + lista + ".\n" +
+                            "<size=24>(El engrane quedó en lo alto de la repisa del oeste, el resorte en el establo y el fusible en el patio.)</size>", 7f);
             return;
         }
         quien.Inventario.Entregar();
-        for (int i = 0; i < faltan.Length; i++) if (!puesta[i] && faltan[i] == r.nombreVisible) { puesta[i] = true; break; }
-        instaladas++;
-        StartCoroutine(Instalar(r, instaladas));
+        int indice = 0;
+        for (int i = 0; i < faltan.Length; i++) if (!puesta[i] && faltan[i] == r.nombreVisible) { indice = i; break; }
+        if (puesta[indice]) for (int i = 0; i < faltan.Length; i++) if (!puesta[i]) { indice = i; break; }   // por si el nombre no coincide
+        puesta[indice] = true;
+        Instaladas++;
+        StartCoroutine(Instalar(r, indice, Instaladas));
     }
 
-    IEnumerator Instalar(Recogible r, int numero)
+    IEnumerator Instalar(Recogible r, int indice, int numero)
     {
-        // la refacción vuela en arco hasta la boca de la máquina y se encoge
+        // la refacción vuela en arco hasta su lugar en el motor y se encoge
+        Transform destino = destinos != null && indice < destinos.Length && destinos[indice] != null ? destinos[indice] : boca;
         Transform t = r.transform; t.SetParent(null, true);
-        Vector3 a = t.position, b = boca.position; Vector3 esc = t.localScale;
+        Vector3 a = t.position, b = destino.position; Vector3 esc = t.localScale;
         for (float k = 0f; k < 1f; k += Time.deltaTime / 0.6f)
         {
             t.position = Vector3.Lerp(a, b, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 0.8f;
@@ -76,16 +88,19 @@ public class MaquinaRota : Interactuable
             yield return null;
         }
         r.Consumir();
-        GestorAudio.Efecto3D("instalar", b, 1f);   // matraca + golpe metálico
+        if (Siete.Instancia != null) Siete.Instancia.Instalada(indice);   // aparece puesta en el motor + foco verde
+        GestorAudio.Efecto3D("instalar", b, 1f);
         TemblorCamara.Sacudir(0.12f);
         if (numero < faltan.Length)
         {
-            UIAviso.Mensaje("¡Refacción instalada! " + numero + "/" + faltan.Length, 3f);
+            UIAviso.Mensaje("¡" + Mayus(faltan[indice]) + " instalado! " + numero + "/" + faltan.Length, 3f);
             if (chispas != null) chispas.Emit(25);
             yield break;
         }
         yield return Reparar();
     }
+
+    static string Mayus(string s) { return string.IsNullOrEmpty(s) ? s : char.ToUpper(s[0]) + s.Substring(1); }
 
     IEnumerator Reparar()
     {
@@ -95,9 +110,13 @@ public class MaquinaRota : Interactuable
         yield return new WaitForSeconds(0.5f);
         if (luzAlerta != null) { luzAlerta.modo = BrilloEmisivo.Modo.Titilar; luzAlerta.velocidad = 0.5f; luzAlerta.minimo = 0.6f; luzAlerta.CambiarColor(new Color(0.25f, 1f, 0.35f)); }
         else if (luzRoja != null) luzRoja.color = new Color(0.25f, 1f, 0.35f);
-        GestorAudio.Efecto("reparada", 0.9f, 0f);  // el motor se apaga + campanita de listo
+        if (Siete.Instancia != null) Siete.Instancia.Curar();
+        GestorAudio.Efecto("reparada", 0.9f, 0f);
+        GestorAudio.Efecto("melodia_siete", 0.8f, 0f);   // la cajita musical de las gracias (historia 1.5)
         GestorAudio.MaquinaReparada();
         foreach (var c in FindObjectsByType<Cascanueces>()) c.Calmar();
-        UIAviso.Mensaje("¡REPARASTE LA MÁQUINA 7!\nYa no hace ruido: los cascanueces se calman (son más lentos y ven menos).", 6f);
+        // la etapa del árbol: si todavía no toca, el DirectorJuego la completa al llegar a ella
+        if (ArbolNavidad.Instancia == null || !ArbolNavidad.Instancia.CompletarExterna(Etapa))
+            UIAviso.Mensaje("¡CURASTE A SIETE!\nYa no da descargas y los cascanueces se calman.", 5f);
     }
 }

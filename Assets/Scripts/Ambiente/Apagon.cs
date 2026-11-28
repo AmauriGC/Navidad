@@ -58,10 +58,11 @@ public class Apagon : MonoBehaviour
     {
         GestorAudio.Efecto("apagon", 1f, 0f);
         TemblorCamara.Sacudir(0.2f);
+        if (DescargaMaquina.Instancia != null) DescargaMaquina.Instancia.Disparar();   // historia 1.5: la descarga más grande (cuenta)
         // parpadeo antes de apagarse
         for (float t = 0f; t < 1.4f; t += 0.07f) { Poner(Random.value < 0.45f ? 1f : 0.05f); yield return new WaitForSeconds(0.07f); }
         Poner(0f); Activo = true;
-        UIAviso.Mensaje("¡APAGÓN! La Máquina 7 descompuesta tumbó la luz del taller.\nLa chimenea y los faroles siguen prendidos... y los cascanueces ven menos.", 5f);
+        UIAviso.Mensaje("¡APAGÓN! La descarga más grande de Siete tumbó la luz del taller.\nLa chimenea y los faroles siguen prendidos... y los cascanueces ven menos.", 5f);
         float fin = Time.time + duracion;
         while (Time.time < fin && !MaquinaRota.Reparada)
         {
