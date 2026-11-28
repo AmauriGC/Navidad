@@ -55,10 +55,14 @@ Las **galletas** ganan protagonismo: son la charola de Santa y se acomodan por f
       - `DescargaMaquina` (--- DIRECTOR ---): temporizador `Dificultad.Datos.segundosDescarga`, rayo por los cables, parpadeo,
         cuerda extra (`Cascanueces.DarCuerda`), grave = `DespertarYa`; descarga 10 = susto (Fácil/Medio) o `DirectorJuego.Sobrecarga`.
       - `LlaveCuerda` gira la llave según el estado; Apagón de las 3 AM = una descarga más; UIObjetivo "Etapa X/7"; brújula.
-- [ ] H5 — Charola de galletas (minijuego con mouse y táctil, animación NOCHEBUENA, recompensas).
+- [x] H5 — Charola (28/11): `CharolaGalletas` (en Col_MesitaCharola): cámara cenital (se apaga el CinemachineBrain un rato),
+      arrastrar con mouse/dedo, girar con rueda/clic derecho/[R]/botón; encaja solo en su hueco con la letra derecha; foquito
+      cálido; la noche sigue (`RelojAmanecer.Avanzar`). Al llenarla: letras una por una, banner, Jengibre (diálogo), poder.
+      `Galleta`: índice 0..9, forma de Galletas_Formas.glb, HUD "N O C H E B U E N A". `Galleta.Todas` = charola llena.
 - [ ] H6 — Cinemáticas: ZAAP de la intro, primera descarga, melodía de Siete, fabricar la estrella, final dorado,
       cascanueces chiquitos juntitos, Jengibre, epílogo.
-- [ ] H7 — Sonidos (`generar_audio`, función nueva con semilla propia).
+- [x] H7 — Sonidos (28/11): `generar_audio.historia15()` (semilla 27): descarga, melodia_siete, fabricar, encajo, palanca,
+      cuerda, voz_siete1-4 (UIHistoria usa voz_siete cuando habla "Siete"). Los sonidos anteriores no cambiaron.
 - [ ] H8 — Partida automática por las 7 etapas y la charola, 0 errores; playtest de Cristian.
 
 ## Dependencias
