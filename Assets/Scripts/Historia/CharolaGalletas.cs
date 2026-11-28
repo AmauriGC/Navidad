@@ -11,7 +11,7 @@ using Unity.Cinemachine;
 /// Va en la mesita junto a la chimenea. [E] -> la cámara se pone ARRIBA de la charola (vista cenital) y las galletas
 /// que traes en la bolsa aparecen en fila enfrente, cada una girada al azar (de 45° en 45°).
 ///   - Arrastra una galleta con el mouse (o el dedo) hasta su hueco.
-///   - Gírala con la rueda, el clic derecho, [R] o el botón "Girar".
+///   - Gírala tocándola (toque/clic corto sin arrastrar), con la rueda, el clic derecho, [R] o el botón "Girar".
 ///   - SOLO encaja si es SU hueco (la misma forma) y si la letra quedó DERECHA (giro 0°). Si no, rebota a su lugar.
 ///   - Al encajar: brinca a su hueco con rebote, suena y su letra queda puesta (en el HUD se pinta dorada).
 ///   - [Esc], [E] o "Listo" para salir; puedes regresar cuando traigas más galletas. La noche sigue avanzando.
@@ -191,12 +191,14 @@ public class CharolaGalletas : Interactuable
         var ts = Touchscreen.current;
         if (ts != null && (ts.primaryTouch.press.isPressed || ts.primaryTouch.press.wasReleasedThisFrame))
         {
+            tactil = true;
             pos = ts.primaryTouch.position.ReadValue();
             baja = ts.primaryTouch.press.wasPressedThisFrame; sube = ts.primaryTouch.press.wasReleasedThisFrame; presionado = ts.primaryTouch.press.isPressed;
         }
         else
         {
             var m = Mouse.current; if (m == null) return;
+            tactil = false;
             pos = m.position.ReadValue();
             baja = m.leftButton.wasPressedThisFrame; sube = m.leftButton.wasReleasedThisFrame; presionado = m.leftButton.isPressed;
             if (m.rightButton.wasPressedThisFrame) Girar();
@@ -205,19 +207,26 @@ public class CharolaGalletas : Interactuable
         }
         Vector3 punto;
         if (!PuntoEnPlano(pos, out punto)) return;
-        bool sobreUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        // ¿el dedo/mouse está sobre un botón (Girar/Listo)? Se revisa a mano: en el teléfono el EventSystem a veces
+        // decía "sobre UI" en toda la pantalla y no dejaba agarrar las galletas.
+        bool sobreUI = SobreBoton(pos);
 
         if (baja && !sobreUI)
         {
-            // se elige EN LA PANTALLA (donde se ve la galleta), no en el piso: así no hay que picarle "abajo" de ella
-            float mejor = Screen.height * 0.07f;
+            // se elige EN LA PANTALLA (donde se ve la galleta), no en el piso: así no hay que picarle "abajo" de ella.
+            // Con el dedo el área es más grande (el dedo tapa la galleta).
+            float mejor = Screen.height * (tactil ? 0.12f : 0.07f);
             foreach (var pz in bolsa)
             {
                 Vector2 c = cam.WorldToScreenPoint(Centro(pz.go));
                 float d = Vector2.Distance(c, pos);
                 if (d < mejor) { mejor = d; agarrada = pz; desfase = c - pos; }
             }
-            if (agarrada != null) { ultima = agarrada; GestorAudio.Efecto("tick", 0.5f, 0.1f); }
+            if (agarrada != null)
+            {
+                ultima = agarrada; GestorAudio.Efecto("tick", 0.5f, 0.1f);
+                toqueInicio = pos; toqueTiempo = Time.unscaledTime; posAntes = agarrada.go.transform.position;
+            }
         }
         if (agarrada != null && presionado)
         {
@@ -228,7 +237,28 @@ public class CharolaGalletas : Interactuable
                 agarrada.go.transform.position = Vector3.Lerp(agarrada.go.transform.position, meta, Time.unscaledDeltaTime * 25f);
             }
         }
-        if (agarrada != null && sube) { Soltar(agarrada); agarrada = null; }
+        if (agarrada != null && sube)
+        {
+            // TOQUE corto sin arrastrar = girar esa galleta (se queda donde estaba); si la arrastraste, se suelta
+            bool toque = (pos - toqueInicio).magnitude < Screen.height * 0.03f && Time.unscaledTime - toqueTiempo < 0.35f;
+            if (toque) { agarrada.go.transform.position = posAntes; Girar(); }
+            else Soltar(agarrada);
+            agarrada = null;
+        }
+    }
+
+    Vector2 toqueInicio; float toqueTiempo; Vector3 posAntes;
+    bool tactil;
+
+    /// <summary>true si la posición de pantalla cae dentro de un botón de la capa de la charola.</summary>
+    bool SobreBoton(Vector2 pos)
+    {
+        if (capa == null) return false;
+        var canvas = capa.GetComponentInParent<Canvas>();
+        Camera c = canvas != null && canvas.rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.rootCanvas.worldCamera : null;
+        foreach (var b in capa.GetComponentsInChildren<Button>())
+            if (RectTransformUtility.RectangleContainsScreenPoint((RectTransform)b.transform, pos, c)) return true;
+        return false;
     }
 
     void Girar(int sentido = 1)
@@ -391,8 +421,8 @@ public class CharolaGalletas : Interactuable
         if (Galleta.CharolaLlena || (bolsa.Count == 0 && Galleta.EnBolsa.Count == 0))
             return Galleta.CharolaLlena ? "¡Todas en su lugar! · <b>[Esc]</b> o <b>Listo</b> para salir" : "Todavía no traes galletas · <b>[Esc]</b> o <b>Listo</b> para salir";
         return Tactil.Activo
-            ? "Arrastra cada galleta a su hueco · botón <b>Girar</b> para enderezar la letra"
-            : "Arrastra cada galleta a su hueco con el mouse · <b>[Rueda]</b> o <b>[Clic derecho]</b> para girar · <b>[Esc]</b> salir";
+            ? "Arrastra cada galleta a su hueco · <b>tócala</b> para girarla y enderezar la letra"
+            : "Arrastra cada galleta a su hueco · <b>clic</b>, <b>[Rueda]</b> o <b>[Clic derecho]</b> para girar · <b>[Esc]</b> salir";
     }
 
     float mensajeHasta;
