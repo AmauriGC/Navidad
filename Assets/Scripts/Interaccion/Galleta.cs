@@ -117,7 +117,8 @@ public class Galleta : MonoBehaviour
         {
             var canvas = UIConstructor.Canvas;
             if (canvas == null) return;
-            var rt = UIConstructor.Rect("Galletas", canvas.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(760, 40), new Vector2(30 + 22 + 260, -30 - 170 - 26 - (Dificultad.ConVidas ? 114 : 0)));
+            var rt = UIConstructor.Rect("Galletas", canvas.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(760, 40), new Vector2(30 + 22, -30 - 170 - 26 - (Dificultad.ConVidas ? 114 : 0)));
+            rt.pivot = new Vector2(0f, 0.5f);   // anclado por la orilla izquierda (centrado se salía de la pantalla)
             textoHUD = UIConstructor.Texto(rt, "", 26, new Color(1f, 0.85f, 0.6f), TextAnchor.MiddleLeft);
             rt.gameObject.AddComponent<SeguirPanel>();
             UIConstructor.Sombra(textoHUD);
