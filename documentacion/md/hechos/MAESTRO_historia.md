@@ -1,7 +1,7 @@
 # MAESTRO · Historia nueva: Siete (la Máquina 7)
 
-- Estado: En progreso
-- Creado: 27/11/2026 · Actualizado: 28/11/2026 (H6 y H8)
+- Estado: Hecho (v1.5)
+- Creado: 27/11/2026 · Actualizado: 28/11/2026 (H6, H8 y publicada en v1.5)
 - Versión destino: **1.5**
 - Escrita entre Cristian y Claude. Las notas de Cristian mandan.
 

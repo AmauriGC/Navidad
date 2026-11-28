@@ -3,7 +3,10 @@
 Juego 3D navideño hecho en Unity para el Mini Game Jam "Una navidad diferente".
 Los cascanueces tumbaron el gran árbol del taller y escondieron sus piezas: el elfo
 tiene que encontrarlas por la fábrica, el establo y el pueblo, y armar el árbol antes
-del amanecer sin que lo atrapen.
+del amanecer sin que lo atrapen. En la versión 1.5 lo ayuda Siete, la Máquina 7: hay que
+repararla para que fabrique la estrella nueva.
+
+Versión actual: **1.5** (28/11/2026).
 
 Autor: Cristian Amauri Gonzaga Castañeda.
 

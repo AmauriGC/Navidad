@@ -37,10 +37,10 @@
 | `md/hechos/MAESTRO_juego.md` | Sistemas del juego, escena, controles, dificultad |
 | `md/hechos/MAESTRO_modelos.md` | Flujo Blender -> glTF -> Unity, estilo low-poly |
 | `md/hechos/MAESTRO_graficos.md` | Menú de gráficos Bajo / Medio / Alto / Personalizado |
-| `md/pendientes/MAESTRO_movil.md` | Versión para teléfono (Android) |
-| `md/en_progreso/MAESTRO_historia.md` | Historia nueva: Siete (la Máquina 7), descargas, estrella nueva y charola de galletas |
-| `md/en_progreso/FASE_01_historia_guion.md` | Guion completo v1.5 (para revisar y aprobar) |
-| `md/en_progreso/MAESTRO_detallitos.md` | Pulido: cascanueces, ventisca, bola de nieve, hielo, galletas, pausa, reno |
+| `md/en_progreso/MAESTRO_movil.md` | Versión para teléfono (Android) |
+| `md/hechos/MAESTRO_historia.md` | Historia v1.5: Siete (la Máquina 7), descargas, estrella nueva y charola de galletas |
+| `md/hechos/FASE_01_historia_guion.md` | Guion completo v1.5 (aprobado y pasado a `Guion.cs`) |
+| `md/hechos/MAESTRO_detallitos.md` | Pulido v1.5: cascanueces, ventisca, bola de nieve, hielo, galletas, pausa, reno |
 | `md/analisis/ANALISIS_RENDIMIENTO.md` | Mediciones de rendimiento y hallazgos |
 
 ## 4. Convención rápida

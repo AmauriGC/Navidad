@@ -1,7 +1,7 @@
 # MAESTRO · Detallitos del juego
 
-- Estado: En progreso
-- Creado: 27/11/2026 · Actualizado: 27/11/2026
+- Estado: Hecho (v1.5)
+- Creado: 27/11/2026 · Actualizado: 28/11/2026
 
 ## Objetivo
 Versión destino: **1.5** (junto con la historia nueva de la Máquina 7; hoy está la 1.4 en GitHub).
