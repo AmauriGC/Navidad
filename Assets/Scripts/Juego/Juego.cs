@@ -40,5 +40,7 @@ public static class Juego
         UnityEngine.Time.timeScale = 1f;
         Graficos.Reiniciar();
         Tactil.Reiniciar();
+        Ventisca.Multiplicador = 1f;
+        UnityEngine.Time.captureFramerate = 0;     // por si se detuvo el Play a media grabación del tráiler
     }
 }

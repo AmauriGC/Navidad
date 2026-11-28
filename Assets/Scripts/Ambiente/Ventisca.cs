@@ -16,6 +16,8 @@ public class Ventisca : MonoBehaviour
 {
     public static float Intensidad { get; private set; }
     public static bool Activa => Intensidad > 0.3f;
+    /// <summary>Más copos (solo lo usa el grabador del tráiler; en el juego siempre es 1).</summary>
+    public static float Multiplicador = 1f;
 
     public float intervaloMin = 120f, intervaloMax = 180f;
     public float duracion = 20f;
@@ -121,7 +123,8 @@ public class Ventisca : MonoBehaviour
         vel.z = new ParticleSystem.MinMaxCurve(v.z * 0.8f, v.z * 1.2f);
         // los copos nacen "contra el viento" para que crucen frente al jugador
         copos.transform.position = jugador.position + Vector3.up * 2f - direccion * 9f;
-        var em = copos.emission; em.rateOverTime = 1100f * k;
+        var em = copos.emission; em.rateOverTime = 1100f * k * Multiplicador;
+        var mm = copos.main; mm.maxParticles = Mathf.RoundToInt(1500 * Multiplicador);
     }
 
     void OnDestroy()
