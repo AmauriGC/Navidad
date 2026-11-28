@@ -38,7 +38,7 @@
 | `md/hechos/MAESTRO_modelos.md` | Flujo Blender -> glTF -> Unity, estilo low-poly |
 | `md/hechos/MAESTRO_graficos.md` | Menú de gráficos Bajo / Medio / Alto / Personalizado |
 | `md/pendientes/MAESTRO_movil.md` | Versión para teléfono (Android) |
-| `md/pendientes/MAESTRO_historia.md` | Historia nueva con la Máquina 7 (borrador para escribir ideas) |
+| `md/en_progreso/MAESTRO_historia.md` | Historia nueva: Siete (la Máquina 7), descargas, estrella nueva y charola de galletas |
 | `md/en_progreso/MAESTRO_detallitos.md` | Pulido: cascanueces, ventisca, bola de nieve, hielo, galletas, pausa, reno |
 | `md/analisis/ANALISIS_RENDIMIENTO.md` | Mediciones de rendimiento y hallazgos |
 
