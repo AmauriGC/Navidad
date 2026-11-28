@@ -17,6 +17,8 @@ Shader "Navidad/CieloNocturno"
         _AuroraC ("Aurora color punta", Color) = (1.0, 0.3, 0.6, 1)
         _AuroraIntensidad ("Aurora intensidad", Float) = 1.6
         _AuroraVelocidad ("Aurora velocidad", Float) = 1.0
+        _Niebla ("Niebla de ventisca (0-1)", Range(0, 1)) = 0
+        _ColorNiebla ("Color de la niebla", Color) = (0.32, 0.38, 0.48, 1)
     }
     SubShader
     {
@@ -31,7 +33,8 @@ Shader "Navidad/CieloNocturno"
             #include "UnityCG.cginc"
 
             float4 _ColorArriba, _ColorHorizonte, _ColorAbajo, _ColorLuna, _AuroraA, _AuroraB, _AuroraC, _DirLuna;
-            float _DensidadEstrellas, _BrilloEstrellas, _AuroraIntensidad, _AuroraVelocidad;
+            float _DensidadEstrellas, _BrilloEstrellas, _AuroraIntensidad, _AuroraVelocidad, _Niebla;
+            float4 _ColorNiebla;
 
             struct appdata { float4 vertex : POSITION; };
             struct v2f { float4 pos : SV_POSITION; float3 dir : TEXCOORD0; };
@@ -139,6 +142,11 @@ Shader "Navidad/CieloNocturno"
                 float3 au = aurora(d, t);
                 col += au;
                 col += _AuroraA.rgb * 0.012 * smoothstep(0.0, 0.3, d.y) * (1 - smoothstep(0.3, 0.8, d.y));   // resplandor suave del cielo
+
+                // 5) ventisca: el cielo también se tapa de nieve (si no, quedaba una mancha negra arriba de los
+                //    techos mientras todo lo demás se ponía gris). Más tapado cerca del horizonte.
+                float tapado = _Niebla * lerp(1.0, 0.82, smoothstep(0.0, 0.7, d.y));
+                col = lerp(col, _ColorNiebla.rgb, saturate(tapado));
 
                 return fixed4(col, 1);
             }
