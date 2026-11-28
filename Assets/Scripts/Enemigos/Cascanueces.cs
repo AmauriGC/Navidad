@@ -70,6 +70,7 @@ public class Cascanueces : MonoBehaviour
             ArbolNavidad.Instancia.alCompletar.AddListener(Congelar);
         }
         CambiarA(Estado.Dormido);
+        if (GetComponent<LlaveCuerda>() == null) gameObject.AddComponent<LlaveCuerda>();   // la llave de la espalda gira
     }
 
     void OnDestroy()
@@ -113,11 +114,11 @@ public class Cascanueces : MonoBehaviour
             case Estado.Congelado:
                 agente.isStopped = true; agente.ResetPath(); break;
             case Estado.Patrulla:
-                agente.isStopped = false; agente.speed = velocidadPatrulla; IrAlPunto(); break;
+                agente.isStopped = false; agente.speed = velocidadPatrulla * FactorCuerda; IrAlPunto(); break;
             case Estado.Sospecha:
                 agente.isStopped = true; break;
             case Estado.Persecucion:
-                agente.isStopped = false; agente.speed = velocidadPersecucion; break;
+                agente.isStopped = false; agente.speed = velocidadPersecucion * FactorCuerda; break;
             case Estado.Aturdido:
                 agente.isStopped = true; agente.ResetPath();
                 if (estrellasAturdido) estrellasAturdido.Play();
@@ -310,6 +311,7 @@ public class Cascanueces : MonoBehaviour
     /// (más lentos, ven y oyen menos). Lo llama MaquinaRota al terminar la reparación.</summary>
     public void Calmar()
     {
+        Calmado = true;
         velocidadPatrulla *= 0.85f; velocidadPersecucion *= 0.85f;
         distanciaVision *= 0.75f; distanciaOido *= 0.7f;
         if (agente != null) agente.speed *= 0.85f;
@@ -340,4 +342,36 @@ public class Cascanueces : MonoBehaviour
     }
 
     public void Congelar() { CambiarA(Estado.Congelado); Alerta = 0f; }
+
+    // ------------------------------------------------------------------ historia 1.5: la CUERDA que les da Siete
+    float factorCuerda = 1f, cuerdaHasta = -1f;
+    /// <summary>Siete ya está curada: van más lentos (y la llave de cuerda gira despacito).</summary>
+    public bool Calmado { get; private set; }
+    /// <summary>¿Trae cuerda extra de una descarga? (la llave gira rapidísimo y va más rápido).</summary>
+    public bool ConCuerdaExtra { get { return Time.time < cuerdaHasta; } }
+    float FactorCuerda { get { return ConCuerdaExtra ? factorCuerda : 1f; } }
+
+    /// <summary>Una descarga de Siete le da cuerda: x'factor' de velocidad durante 'segundos'.</summary>
+    public void DarCuerda(float factor, float segundos)
+    {
+        factorCuerda = factor; cuerdaHasta = Time.time + segundos;
+        AjustarVelocidad();
+        CancelInvoke(nameof(AjustarVelocidad));
+        Invoke(nameof(AjustarVelocidad), segundos + 0.05f);   // al acabarse la cuerda vuelve a su velocidad normal
+    }
+
+    void AjustarVelocidad()
+    {
+        if (agente == null || !agente.isOnNavMesh) return;
+        if (EstadoActual == Estado.Patrulla) agente.speed = velocidadPatrulla * FactorCuerda;
+        else if (EstadoActual == Estado.Persecucion) agente.speed = velocidadPersecucion * FactorCuerda;
+    }
+
+    /// <summary>Descarga GRAVE (Difícil/Imposible): si estaba dormido, despierta antes de tiempo.</summary>
+    public bool DespertarYa()
+    {
+        if (EstadoActual != Estado.Dormido) return false;
+        CambiarA(Estado.Patrulla);
+        return true;
+    }
 }

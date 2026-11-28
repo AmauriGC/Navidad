@@ -33,6 +33,7 @@ public class CascanuecesNevado : MonoBehaviour
 
     void Start()
     {
+        if (GetComponent<LlaveCuerda>() == null) gameObject.AddComponent<LlaveCuerda>();   // historia 1.5: su llave también gira
         var j = GameObject.FindGameObjectWithTag("Player");
         if (j != null) { jugador = j.transform; elfo = j.GetComponent<ElfoController>(); posJugadorAntes = jugador.position; }
         if (brazoLanzar != null) rotBrazo0 = brazoLanzar.localRotation;
