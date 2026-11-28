@@ -33,7 +33,8 @@ public class UIBrujula : MonoBehaviour
         if (j != null) { jugador = j.transform; inventario = j.GetComponent<Inventario>(); }
         arbol = ArbolNavidad.Instancia;
         camino = new NavMeshPath();
-        var mr = FindAnyObjectByType<MaquinaRota>(); if (mr != null) maquina = mr.transform;
+        var fe = FindAnyObjectByType<FabricaEstrella>(); if (fe != null) maquina = fe.transform;   // Siete (la Máquina 7)
+        else { var mr = FindAnyObjectByType<MaquinaRota>(); if (mr != null) maquina = mr.transform; }
 
         var capa = UIConstructor.Capa("Brujula", 5);
         var raiz = UIConstructor.Rect("Contenido", capa, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(400, 150), new Vector2(0, -85));
@@ -148,10 +149,24 @@ public class UIBrujula : MonoBehaviour
         string tipo = arbol.EtapaActual.tipoPieza;
         var reno = FindAnyObjectByType<RenoGuirnalda>();
         var enMano = inventario != null && inventario.TieneObjeto ? inventario.EnMano : null;
+        // historia 1.5: las etapas EXTERNAS buscan otra cosa y se entregan en otro lado
+        Transform entrega = arbol.transform; string nombreEntrega = "Árbol";
+        if (tipo == MaquinaRota.Etapa)
+        {
+            var mr = FindAnyObjectByType<MaquinaRota>();
+            tipo = mr != null ? mr.tipoRefaccion : "Refaccion";
+            if (mr != null) { entrega = mr.transform; nombreEntrega = "Corazón de Siete"; }
+        }
+        else if (tipo == FabricaEstrella.Etapa)
+        {
+            var fe = FindAnyObjectByType<FabricaEstrella>();
+            tipo = fe != null ? fe.tipoRota : "EstrellaRota";
+            if (fe != null) { entrega = fe.transform; nombreEntrega = "Siete"; }
+        }
 
-        // 1) ya traigo la pieza correcta -> al árbol
+        // 1) ya traigo la pieza correcta -> a donde se entrega (el árbol, el corazón de Siete o Siete)
         if (enMano != null && enMano.tipo == tipo)
-        { objetivo = arbol.transform; nombreObjetivo = "Árbol"; return; }
+        { objetivo = entrega; nombreObjetivo = nombreEntrega; return; }
 
         // 2) la pieza de ese tipo más cercana POR CAMINO (con preferencia a la que ya seguíamos)
         Recogible mejor = null; float mejorLargo = float.MaxValue;

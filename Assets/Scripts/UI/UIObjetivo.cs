@@ -29,7 +29,11 @@ public class UIObjetivo : MonoBehaviour
         if (grupo == null) { grupo = GetComponent<CanvasGroup>(); if (grupo == null) grupo = gameObject.AddComponent<CanvasGroup>(); }
         bool visible = Juego.Estado == Juego.Modo.Jugando || Juego.Estado == Juego.Modo.Leyendo;
         grupo.alpha = Mathf.MoveTowards(grupo.alpha, visible ? 1f : 0f, Time.unscaledDeltaTime * 3f);
+        // etapas externas (curar a Siete): las refacciones no avisan al árbol, así que se refresca solo cada medio segundo
+        if (arbol != null && !arbol.Completo && arbol.EtapaActual.externa && Time.unscaledTime > siguienteRefresco)
+        { siguienteRefresco = Time.unscaledTime + 0.5f; Actualizar(); }
     }
+    float siguienteRefresco;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Reiniciar() { Abajo = 200f; }
@@ -39,11 +43,13 @@ public class UIObjetivo : MonoBehaviour
     void Actualizar()
     {
         if (arbol == null) return;
-        titulo.text = "Árbol de Navidad  " + arbol.PiezasColocadas + "/" + arbol.TotalPiezas;
+        int n = arbol.etapas.Length;
+        titulo.text = "Etapa " + Mathf.Min(arbol.IndiceEtapa + 1, n) + "/" + n + "   ·   Árbol " + arbol.PiezasColocadas + "/" + arbol.TotalPiezas;
         if (barra) barra.fillAmount = arbol.Progreso;
         if (arbol.Completo) { detalle.text = "¡El árbol está completo!"; Acomodar(); return; }
         var e = arbol.EtapaActual;
         string cuenta = e.partes.Length > 1 ? "  (" + arbol.EntregadasEtapa + "/" + e.partes.Length + ")" : "";
+        if (e.tipoPieza == MaquinaRota.Etapa) cuenta = "  (" + MaquinaRota.Instaladas + "/3)";
         detalle.text = "Siguiente: " + e.nombre + cuenta + "\n<i>" + e.pista + "</i>";
         Acomodar();
     }
