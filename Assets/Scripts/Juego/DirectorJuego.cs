@@ -571,7 +571,7 @@ public class DirectorJuego : MonoBehaviour
         StartCoroutine(Derrota(Guion.DerrotaAtrapado));
     }
 
-    IEnumerator Derrota() { return Derrota(Guion.Derrota); }
+    IEnumerator Derrota() { return Derrota(Guion.LineasDerrota(MaquinaRota.Reparada)); }
 
     IEnumerator Derrota(Linea[] lineas)
     {
