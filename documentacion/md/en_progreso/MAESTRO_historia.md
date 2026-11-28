@@ -1,7 +1,7 @@
 # MAESTRO · Historia nueva: Siete (la Máquina 7)
 
 - Estado: En progreso
-- Creado: 27/11/2026 · Actualizado: 27/11/2026
+- Creado: 27/11/2026 · Actualizado: 28/11/2026
 - Versión destino: **1.5**
 - Escrita entre Cristian y Claude. Las notas de Cristian mandan.
 
@@ -34,14 +34,27 @@ Las **galletas** ganan protagonismo: son la charola de Santa y se acomodan por f
 ## Fases (de una en una; Cristian revisa en Blender/Unity antes de seguir)
 - [x] H1 — Guion (27/11, aprobado): `FASE_01_historia_guion.md` → `Guion.cs` (etapas 5-6, gritos, descargas, galletas,
       Jengibre, final dorado, derrotas por amanecer/sobrecarga, letreros nuevos como constantes) y 5 letreros de la escena.
-- [ ] H2 — Modelos (Vitrina → aprobar → .glb):
-      - [x] a) Siete v3 (27/11, aprobada): `Blender/siete_v3.py` → Props_Taller.glb. Hijos de Maquina: Siete_OjoL/R, Siete_Boca,
-        Siete_Foco_1..3 (engrane, resorte, fusible; 1 = izquierda vista de frente), Siete_Aguja (Y local = 120° − 24°·descargas),
-        Siete_Palanca (bisagra eje X), Siete_Engrane_1/2, Siete_Cables (camino en `Blender/datos_siete.json`, coords de Unity).
-      b) cuarto de máquinas (motor, plano, puerta); c) llave de cuerda, estrella rota, caja del lote 24, Refaccion_Fusible;
-      d) charola + 10 galletas con forma y letra.
-- [ ] H3 — Escenario en Unity: puerta, colisiones/capas, luces, cámara, NavMesh, letreros nuevos, estrella rota en la repisa.
-- [ ] H4 — Mecánicas: 7 etapas, `DescargaMaquina`, sobrecarga, refacciones vigiladas, palanca, brújula, reloj, HUD.
+- [x] H2 — Modelos (27-28/11, aprobados por Cristian):
+      - [x] a) Siete v3: `Blender/siete_v3.py` → Props_Taller.glb. Hijos de Maquina: Siete_OjoL/R, Siete_Boca, Siete_Foco_1..3
+        (engrane, resorte, fusible; 1 = izquierda vista de frente), Siete_Aguja, Siete_Palanca, Siete_Engrane_1/2, Siete_Cables
+        (camino en `Blender/datos_siete.json`, coords de Unity).
+      - [x] b) Cuarto de máquinas: `Blender/cuarto_maquinas.py` → Cuarto_Maquinas + Cuarto_Plano (Edificio.glb), puerta de 1.6 m
+        en la pared norte (hueco en Taller_Paredes; `restaurar_pared()`), Siete_Corazon con Corazon_Engrane/Resorte/Fusible/
+        Volante/Foco (Props_Taller.glb). Se quitaron 2 postes de la cerca que cruzaban el cuarto (`datos_cerca.json`).
+      - [x] c) `Blender/historia_props.py`: Cas_Llave (llave de cuerda, Cascanueces.glb), Pieza_EstrellaRota.glb, Caja_Lote24
+        (Props_Taller.glb, entre las repisas del sur) y Refaccion_Fusible.glb (+ prefabs en Assets/Prefabs/Piezas/).
+      - [x] d) `Blender/galletas_charola.py`: GalletaForma_0..9 (Galletas_Formas.glb) y Charola (hijos Hueco_0..9) + Mesita_Charola
+        junto a la chimenea, Unity (-7.6, 0, 7.3), girada para leerse desde el taller.
+- [x] H3 — Escenario: colisiones del cuarto (greybox Taller/Cuarto_Maquinas, Pared_Norte partida en 3), Luz_Cuarto (spot sin
+      sombra), ColCamara del techo, NavMesh rehorneado (camino completo al cuarto), estrella rota en la repisa oeste (la estrella
+      vieja desactivada), fusible en el patio con `CajaSorpresa_Fusible` (siempreActiva) y la llave inglesa desactivada, engrane
+      arriba de la repisa oeste, letreros 11 (plano) y 12 (receta), colisiones de la caja del lote 24 y de la mesita.
+- [x] H4 — Mecánicas (partida automática por las 7 etapas: 0 errores):
+      - `EtapaArbol.externa` + `ArbolNavidad.CompletarExterna(tipo)`; etapas 5 "CurarSiete" y 6 "FabricarEstrella".
+      - `MaquinaRota` (en Cuarto_Motor) = corazón obligatorio; `FabricaEstrella` y `Siete` en Estaciones/MaquinaJuguetes.
+      - `DescargaMaquina` (--- DIRECTOR ---): temporizador `Dificultad.Datos.segundosDescarga`, rayo por los cables, parpadeo,
+        cuerda extra (`Cascanueces.DarCuerda`), grave = `DespertarYa`; descarga 10 = susto (Fácil/Medio) o `DirectorJuego.Sobrecarga`.
+      - `LlaveCuerda` gira la llave según el estado; Apagón de las 3 AM = una descarga más; UIObjetivo "Etapa X/7"; brújula.
 - [ ] H5 — Charola de galletas (minijuego con mouse y táctil, animación NOCHEBUENA, recompensas).
 - [ ] H6 — Cinemáticas: ZAAP de la intro, primera descarga, melodía de Siete, fabricar la estrella, final dorado,
       cascanueces chiquitos juntitos, Jengibre, epílogo.
