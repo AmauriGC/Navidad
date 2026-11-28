@@ -1,6 +1,6 @@
 # FASE 01 · Guion de la historia nueva (v1.5)
 
-- Estado: Borrador para revisar (Cristian)
+- Estado: Aprobado (27/11) · pasado a `Guion.cs` y a los letreros de la escena
 - Maestro: `MAESTRO_historia.md`
 
 > **Cómo leerlo:** `N` = narración (pantalla negra), `Nombre:` = diálogo, `[ ]` = lo que se ve (cinemática).

@@ -32,7 +32,8 @@ Las **galletas** ganan protagonismo: son la charola de Santa y se acomodan por f
 - No incluye: el tráiler. Los detallitos van después (`MAESTRO_detallitos.md`, fases 2-9).
 
 ## Fases (de una en una; Cristian revisa en Blender/Unity antes de seguir)
-- [ ] H1 — Guion: todos los textos (`FASE_01_historia_guion.md`) → aprobado → `Guion.cs` y letreros.
+- [x] H1 — Guion (27/11, aprobado): `FASE_01_historia_guion.md` → `Guion.cs` (etapas 5-6, gritos, descargas, galletas,
+      Jengibre, final dorado, derrotas por amanecer/sobrecarga, letreros nuevos como constantes) y 5 letreros de la escena.
 - [ ] H2 — Modelos (Vitrina → aprobar → .glb): a) Siete v3 (tablero 3 focos, palanca, foco-carita, cables al techo);
       b) cuarto de máquinas (motor, plano, puerta); c) llave de cuerda, estrella rota, caja del lote 24, Refaccion_Fusible;
       d) charola + 10 galletas con forma y letra.
