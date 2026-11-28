@@ -1,7 +1,7 @@
 # MAESTRO · Historia nueva: Siete (la Máquina 7)
 
 - Estado: En progreso
-- Creado: 27/11/2026 · Actualizado: 28/11/2026
+- Creado: 27/11/2026 · Actualizado: 28/11/2026 (H6 y H8)
 - Versión destino: **1.5**
 - Escrita entre Cristian y Claude. Las notas de Cristian mandan.
 
@@ -59,11 +59,15 @@ Las **galletas** ganan protagonismo: son la charola de Santa y se acomodan por f
       arrastrar con mouse/dedo, girar con rueda/clic derecho/[R]/botón; encaja solo en su hueco con la letra derecha; foquito
       cálido; la noche sigue (`RelojAmanecer.Avanzar`). Al llenarla: letras una por una, banner, Jengibre (diálogo), poder.
       `Galleta`: índice 0..9, forma de Galletas_Formas.glb, HUD "N O C H E B U E N A". `Galleta.Todas` = charola llena.
-- [ ] H6 — Cinemáticas: ZAAP de la intro, primera descarga, melodía de Siete, fabricar la estrella, final dorado,
-      cascanueces chiquitos juntitos, Jengibre, epílogo.
+- [x] H6 — Cinemáticas (28/11, revisadas en Play con capturas): ZAAP de la intro (3 pares de ojos rojos chiquitos, luz
+      roja corta para que no se pinte toda la caja), cámara en Siete en las etapas 5-6, descarga dorada del final,
+      cascanueces chiquitos JUNTITOS en la repisa sur (se les prenden los ojos azules frente a la cámara) y epílogo
+      (la cámara ya no sigue al trineo: `MoverCamaraFija` apaga `seguirTrineo`). El texto "Galletas" se esconde en
+      cinemáticas (se queda en la charola).
 - [x] H7 — Sonidos (28/11): `generar_audio.historia15()` (semilla 27): descarga, melodia_siete, fabricar, encajo, palanca,
       cuerda, voz_siete1-4 (UIHistoria usa voz_siete cuando habla "Siete"). Los sonidos anteriores no cambiaron.
-- [ ] H8 — Partida automática por las 7 etapas y la charola, 0 errores; playtest de Cristian.
+- [x] H8 — Partida automática (28/11) por las 7 etapas por el camino real (refacciones, palanca, estrella) y la charola llena
+      → final especial, guiño y créditos: 0 errores, 0 avisos. Falta el playtest de Cristian.
 
 ## Dependencias
 - Sistemas existentes: `ArbolNavidad`/`EtapaArbol`, `MaquinaRota`, `Recogible`, `RepartidorPiezas`, `DirectorJuego`,
