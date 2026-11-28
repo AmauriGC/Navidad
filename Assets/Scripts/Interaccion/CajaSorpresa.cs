@@ -17,6 +17,8 @@ public class CajaSorpresa : MonoBehaviour
     public float radioCaminando = 1.0f, radioCorriendo = 2.3f, radioRuido = 20f;
     public float cerrarTras = 6f, rearme = 18f;
     public Transform tapa, resorte, payaso;
+    [Tooltip("Historia 1.5: la caja que cuida el fusible está prendida en TODAS las dificultades (Dificultad no la apaga).")]
+    public bool siempreActiva;
 
     const float Aplastado = 0.12f, LargoResorte = 0.5f;
     Transform jugador; ElfoController elfo;

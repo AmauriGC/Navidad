@@ -9,7 +9,10 @@ using UnityEngine;
 ///    Si se acaban: derrota ("¡Te atraparon!").
 ///  - GALLETAS -> VIDA: en Difícil cada 2 galletas dan +1 vida; en Imposible cada 5. Tope: 5 vidas.
 ///  - CASCANUECES: multiplicadores de velocidad, vista, oído y tiempo aturdido; en Imposible despiertan una pieza antes.
-///  - RELOJ: minutos reales hasta el amanecer (20 / 15 / 12 / 10).
+///  - RELOJ: minutos reales hasta el amanecer (25 / 20 / 15 / 12; la historia 1.5 tiene 7 etapas).
+///  - DESCARGAS DE SIETE (1.5): segundos entre descargas (180 / 120 / 90 / 60). En Fácil/Medio son suaves (solo
+///    alertan un ratito) y la descarga 10 es un susto; en Difícil/Imposible son GRAVES (despiertan al cascanueces
+///    dormido más cercano) y la descarga 10 = derrota por SOBRECARGA.
 /// Medio = el juego como estaba antes (todos los multiplicadores en 1).
 /// </summary>
 public static class Dificultad
@@ -29,6 +32,8 @@ public static class Dificultad
         public float ventiscaMin, ventiscaMax;   // segundos entre ventiscas (0 = sin ventiscas)
         public int bolasMax;            // cuántas bolas de nieve caben en tus manos
         public int cajasSorpresa;       // cuántas cajas sorpresa se prenden (0 = ninguna)
+        public float segundosDescarga;  // tiempo entre descargas de Siete (historia 1.5)
+        public bool descargaGrave;      // Difícil/Imposible: despiertan cascanueces y la descarga 10 es derrota
     }
 
     public const int MaxVidas = 5;
@@ -36,17 +41,17 @@ public static class Dificultad
     public static readonly Datos[] Niveles =
     {
         new Datos { nombre = "Fácil", color = new Color(0.45f, 0.9f, 0.55f),
-            descripcion = "Cascanueces lentos y despistados.\nTienes 20 minutos.\nSin vidas: solo te quitan la pieza.",
-            vidas = 0, galletasPorVida = 0, velocidad = 0.8f, vista = 0.7f, oido = 0.7f, aturdido = 1.4f, minutos = 20f, despertarAntes = -1, oscuridad = 0f, cadenciaNevados = 0f, pilaSegundos = 0f, apagon = false, ventiscaMin = 0f, ventiscaMax = 0f, bolasMax = 6, cajasSorpresa = 0 },
+            descripcion = "Cascanueces lentos y despistados.\nTienes 25 minutos.\nSin vidas: solo te quitan la pieza.",
+            vidas = 0, galletasPorVida = 0, velocidad = 0.8f, vista = 0.7f, oido = 0.7f, aturdido = 1.4f, minutos = 25f, despertarAntes = -1, oscuridad = 0f, cadenciaNevados = 0f, pilaSegundos = 0f, apagon = false, ventiscaMin = 0f, ventiscaMax = 0f, bolasMax = 6, cajasSorpresa = 0, segundosDescarga = 180f, descargaGrave = false },
         new Datos { nombre = "Medio", color = new Color(0.5f, 0.8f, 1f),
-            descripcion = "La noche normal del taller.\nTienes 15 minutos.\nSin vidas: solo te quitan la pieza.",
-            vidas = 0, galletasPorVida = 0, velocidad = 1f, vista = 1f, oido = 1f, aturdido = 1f, minutos = 15f, despertarAntes = 0, oscuridad = 0f, cadenciaNevados = 0f, pilaSegundos = 0f, apagon = false, ventiscaMin = 0f, ventiscaMax = 0f, bolasMax = 5, cajasSorpresa = 0 },
+            descripcion = "La noche normal del taller.\nTienes 20 minutos.\nSin vidas: solo te quitan la pieza.",
+            vidas = 0, galletasPorVida = 0, velocidad = 1f, vista = 1f, oido = 1f, aturdido = 1f, minutos = 20f, despertarAntes = 0, oscuridad = 0f, cadenciaNevados = 0f, pilaSegundos = 0f, apagon = false, ventiscaMin = 0f, ventiscaMax = 0f, bolasMax = 5, cajasSorpresa = 0, segundosDescarga = 120f, descargaGrave = false },
         new Datos { nombre = "Difícil", color = new Color(1f, 0.7f, 0.3f),
-            descripcion = "Más oscuro, nevados afuera,\nlinterna con pila, ventiscas,\napagón y cajas sorpresa.\n12 min · 3 vidas · 2 galletas = +1",
-            vidas = 3, galletasPorVida = 2, velocidad = 1.12f, vista = 1.15f, oido = 1.2f, aturdido = 0.85f, minutos = 12f, despertarAntes = 0, oscuridad = -0.55f, cadenciaNevados = 2.4f, pilaSegundos = 240f, apagon = true, ventiscaMin = 120f, ventiscaMax = 180f, bolasMax = 4, cajasSorpresa = 5 },
+            descripcion = "Más oscuro, nevados afuera,\nlinterna con pila, ventiscas,\napagón y cajas sorpresa.\n15 min · 3 vidas · 2 galletas = +1",
+            vidas = 3, galletasPorVida = 2, velocidad = 1.12f, vista = 1.15f, oido = 1.2f, aturdido = 0.85f, minutos = 15f, despertarAntes = 0, oscuridad = -0.55f, cadenciaNevados = 2.4f, pilaSegundos = 240f, apagon = true, ventiscaMin = 120f, ventiscaMax = 180f, bolasMax = 4, cajasSorpresa = 5, segundosDescarga = 90f, descargaGrave = true },
         new Datos { nombre = "Imposible", color = new Color(1f, 0.35f, 0.35f),
-            descripcion = "Casi a oscuras, pila corta,\nmás nevados y cajas, brújula\nloca y despiertan antes.\n10 min · 1 vida · 5 galletas = +1",
-            vidas = 1, galletasPorVida = 5, velocidad = 1.25f, vista = 1.3f, oido = 1.4f, aturdido = 0.7f, minutos = 10f, despertarAntes = 1, oscuridad = -1.0f, cadenciaNevados = 1.7f, pilaSegundos = 150f, apagon = true, ventiscaMin = 90f, ventiscaMax = 120f, bolasMax = 3, cajasSorpresa = 8 },
+            descripcion = "Casi a oscuras, pila corta,\nmás nevados y cajas, brújula\nloca y despiertan antes.\n12 min · 1 vida · 5 galletas = +1",
+            vidas = 1, galletasPorVida = 5, velocidad = 1.25f, vista = 1.3f, oido = 1.4f, aturdido = 0.7f, minutos = 12f, despertarAntes = 1, oscuridad = -1.0f, cadenciaNevados = 1.7f, pilaSegundos = 150f, apagon = true, ventiscaMin = 90f, ventiscaMax = 120f, bolasMax = 3, cajasSorpresa = 8, segundosDescarga = 60f, descargaGrave = true },
     };
 
     /// <summary>Índice elegido (0 Fácil .. 3 Imposible). Por defecto Medio.</summary>
@@ -91,7 +96,10 @@ public static class Dificultad
         // BOLAS DE NIEVE: cuántas caben
         if (jug != null) { var lan = jug.GetComponent<LanzadorNieve>(); if (lan != null) { lan.maximo = d.bolasMax; lan.bolas = Mathf.Min(lan.bolas, lan.maximo); } }
         // CAJAS SORPRESA: están APAGADAS en la escena; se prenden las primeras N (en orden)
-        var cajas = Object.FindObjectsByType<CajaSorpresa>(FindObjectsInactive.Include);
+        var todas = Object.FindObjectsByType<CajaSorpresa>(FindObjectsInactive.Include);
+        var lista = new System.Collections.Generic.List<CajaSorpresa>();
+        foreach (var c in todas) { if (c.siempreActiva) c.gameObject.SetActive(true); else lista.Add(c); }   // la que cuida el fusible no cuenta
+        var cajas = lista.ToArray();
         System.Array.Sort(cajas, (a, b) => string.CompareOrdinal(a.name, b.name));
         for (int i = 0; i < cajas.Length; i++) cajas[i].gameObject.SetActive(i < d.cajasSorpresa);
         if (d.ventiscaMin > 0f && Object.FindAnyObjectByType<Ventisca>() == null) new GameObject("Ventisca").AddComponent<Ventisca>().Configurar(d.ventiscaMin, d.ventiscaMax);
