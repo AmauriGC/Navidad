@@ -72,11 +72,9 @@ public static class Guion
             Linea.D("Tilo", "Ahora sí: hay que curar a esa máquina."),
             Linea.D("Tilo", "En el cuarto de máquinas, atrás de ella, debe decir qué le falta."),
         },
-        new[] { // 5 · Curar a Siete (melodía de caja musical)
-            Linea.D("Tilo", "¡Funciona! ...¿Eso es una canción?"),
-            Linea.D("Siete", "♪ bip-bip-bup ♪"),
-            Linea.D("Tilo", "De nada, Siete."),
-            Linea.D("Tilo", "Oye... ¿me ayudas con algo? Necesito una estrella nueva."),
+        new[] { // 5 · Curar a Siete (la melodía y el "de nada" salen al curarla: Guion.SieteCurada)
+            Linea.D("Tilo", "Oye, Siete... ¿me ayudas con algo? Necesito una estrella nueva."),
+            Linea.D("Siete", "♪ bup! ♪"),
             Linea.D("Tilo", "La rota la subieron hasta lo alto de la repisa del oeste. Unas cajas me ayudarían a subir."),
         },
         new[] { // 6 · Fabricar la estrella
@@ -84,6 +82,14 @@ public static class Guion
             Linea.D("Siete", "♪ bup! ♪"),
             Linea.D("Tilo", "Gracias, Siete. Ahora... ¡al árbol!"),
         },
+    };
+
+    /// <summary>Al instalar la última refacción (en cualquier momento de la noche): la melodía de gracias de Siete.</summary>
+    public static readonly Linea[] SieteCurada =
+    {
+        Linea.D("Tilo", "¡Funciona! ...¿Eso es una canción?"),
+        Linea.D("Siete", "♪ bip-bip-bup ♪"),
+        Linea.D("Tilo", "De nada, Siete."),
     };
 
     /// <summary>Lo que dice Tilo justo antes de jalar la palanca (etapa 6).</summary>

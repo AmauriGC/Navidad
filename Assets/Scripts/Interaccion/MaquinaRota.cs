@@ -115,7 +115,10 @@ public class MaquinaRota : Interactuable
         GestorAudio.Efecto("melodia_siete", 0.8f, 0f);   // la cajita musical de las gracias (historia 1.5)
         GestorAudio.MaquinaReparada();
         foreach (var c in FindObjectsByType<Cascanueces>()) c.Calmar();
-        // la etapa del árbol: si todavía no toca, el DirectorJuego la completa al llegar a ella
+        // la melodía de gracias sale SIEMPRE al curarla (aunque sea temprano en la noche)
+        yield return new WaitForSeconds(0.6f);
+        yield return UIHistoria.Esperar(Guion.SieteCurada);
+        // la etapa del árbol: si todavía no toca, el DirectorJuego la completa al llegar a ella (sin repetir la canción)
         if (ArbolNavidad.Instancia == null || !ArbolNavidad.Instancia.CompletarExterna(Etapa))
             UIAviso.Mensaje("¡CURASTE A SIETE!\nYa no da descargas y los cascanueces se calman.", 5f);
     }

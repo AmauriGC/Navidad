@@ -43,7 +43,9 @@ public class FabricaEstrella : Interactuable
 
     public override string Texto(Interactor quien)
     {
-        if (MaquinaRota.Reparada && Rota(quien) != null) return "Fabricar una estrella nueva";
+        var a = ArbolNavidad.Instancia;
+        bool toca = a == null || a.Completo || a.EtapaActual.tipoPieza == Etapa;
+        if (MaquinaRota.Reparada && toca && Rota(quien) != null) return "Fabricar una estrella nueva";
         return "Revisar a Siete";
     }
 
@@ -55,6 +57,13 @@ public class FabricaEstrella : Interactuable
             return;
         }
         var r = Rota(quien);
+        var arbol = ArbolNavidad.Instancia;
+        if (arbol != null && !arbol.Completo && arbol.EtapaActual.tipoPieza != Etapa)
+        {
+            // solo se fabrica en su etapa: antes, la historia todavía no llega ahí
+            UIAviso.Mensaje("Siete está lista para trabajar... pero primero termina el Gran Árbol.\nFalta: " + arbol.EtapaActual.nombre.ToLower() + ".", 5f);
+            return;
+        }
         if (r == null)
         {
             UIAviso.Mensaje("Siete puede hacer una estrella nueva...\nsi le traes la estrella rota (quedó arriba de la repisa del oeste).", 5f);
