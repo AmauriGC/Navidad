@@ -1,42 +1,65 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// COLECCIONABLE OPCIONAL: galletas de jengibre escondidas por el pueblo.
-///  - Flota y gira (seno + rotación) para que se note de lejos; tiene una lucecita propia.
-///  - Al tocarla (trigger) se suma al contador, suena, sale un mensaje y desaparece.
-///  - El contador vive en variables static (Encontradas / Total) que se reinician en Juego.Reiniciar,
-///    porque el proyecto tiene Domain Reload desactivado.
-///  - Un texto pequeño en el HUD (arriba a la izquierda) muestra "Galletas 3/10" cuando ya encontraste una.
-///  PREMIOS al juntar TODAS (Galleta.Todas):
-///   1) PODER "leche y galletas" el resto de la noche: el elfo corre 20% más rápido (ElfoController) y las bolas
-///      de nieve aturden el DOBLE de tiempo (Cascanueces.DuracionAturdido).
-///   2) Se desbloquea el elfo secreto JENGIBRE en el menú (VarianteElfo.DesbloquearSecreto, se guarda para siempre).
-///   3) FINAL ESPECIAL: Santa se come las galletas (DirectorJuego.Final + Guion.FinalGalletas) y sale en los créditos.
+/// GALLETAS NOCHEBUENA (historia 1.5): las 10 galletas de la charola de Santa, horneadas por Jengibre.
+/// Cada una tiene una FORMA y una LETRA (índice 0..9 = N·O·C·H·E·B·U·E·N·A, ver Guion.FormaGalleta).
+///  - Flota y gira para que se note de lejos; al tocarla (trigger) se guarda "en la bolsa" (Galleta.EnBolsa).
+///  - En Difícil/Imposible cada galleta RECOGIDA cuenta para las vidas (Vidas.PorGalleta), como antes.
+///  - Se ve con su forma: al empezar esconde el muñequito viejo y pone su GalletaForma_N (Galletas_Formas.glb).
+///  - HUD: la palabra N O C H E B U E N A; las letras que traes en blanco y las que ya están en la charola en dorado.
+///  PREMIOS: ahora se ganan al LLENAR LA CHAROLA (CharolaGalletas), no solo al juntarlas:
+///   poder de galleta (corres +20%, bolas de nieve aturden el doble), elfo secreto JENGIBRE y final especial.
+/// El estado vive en variables static que se reinician solas (el proyecto tiene Domain Reload desactivado).
 /// </summary>
 [RequireComponent(typeof(SphereCollider))]
 public class Galleta : MonoBehaviour
 {
     public static int Encontradas, Total;
-    public static bool Todas { get { return Total > 0 && Encontradas >= Total; } }
+    /// <summary>Galletas recogidas que todavía no se acomodan en la charola.</summary>
+    public static readonly HashSet<int> EnBolsa = new HashSet<int>();
+    /// <summary>Galletas ya acomodadas en la charola.</summary>
+    public static readonly HashSet<int> Puestas = new HashSet<int>();
+    /// <summary>La charola está llena: poder de galleta, Jengibre y final especial.</summary>
+    public static bool CharolaLlena;
+    public static bool Todas { get { return CharolaLlena; } }
     static Text textoHUD;
 
+    [Tooltip("0..9 = N O C H E B U E N A. -1 = se saca del nombre (Galleta_3 -> 3).")]
+    public int indice = -1;
+    [Tooltip("Escala de la forma (las formas miden ~0.42 m; la galleta vieja ~0.5 m).")]
+    public float escalaForma = 1.25f;
     public float flotar = 0.12f, giro = 90f;
     Vector3 inicio; float fase;
+    bool recogida;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void Reiniciar() { Encontradas = 0; Total = 0; textoHUD = null; }
+    static void Reiniciar() { Encontradas = 0; Total = 0; textoHUD = null; EnBolsa.Clear(); Puestas.Clear(); CharolaLlena = false; }
 
     void OnEnable() { Total++; }
     void OnDisable() { if (!recogida) Total--; }
-
-    bool recogida;
 
     void Start()
     {
         inicio = transform.position;
         fase = Random.value * 10f;
         GetComponent<SphereCollider>().isTrigger = true;
+        if (indice < 0) { int n; string s = name.Substring(name.LastIndexOf('_') + 1); if (int.TryParse(s, out n)) indice = n; }
+        PonerForma();
+    }
+
+    /// <summary>Cambia el muñequito de jengibre por la forma con letra que le toca.</summary>
+    void PonerForma()
+    {
+        var charola = FindAnyObjectByType<CharolaGalletas>();
+        var modelo = charola != null ? charola.Forma(indice) : null;
+        if (modelo == null) return;
+        foreach (var r in GetComponentsInChildren<MeshRenderer>()) r.enabled = false;
+        var f = Instantiate(modelo, transform);
+        f.name = "Forma"; f.transform.localPosition = Vector3.zero; f.transform.localRotation = Quaternion.identity;
+        f.transform.localScale = Vector3.one * escalaForma;
+        foreach (var r in f.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
     void Update()
@@ -50,37 +73,41 @@ public class Galleta : MonoBehaviour
         if (recogida || !otro.CompareTag("Player")) return;
         recogida = true;
         Encontradas++;
+        if (indice >= 0) EnBolsa.Add(indice);
         GestorAudio.Efecto("galleta", 0.9f, 0.1f);   // crujido + campanita
-        if (Todas)
-        {
-            bool yaEraTuyo = PlayerPrefs.GetInt("ElfoSecreto", 0) == 1;   // ¿lo desbloqueaste en otra partida?
-            VarianteElfo.DesbloquearSecreto();
-            GestorAudio.Efecto("poder", 0.9f, 0f);      // ¡poder de galleta!
-            TemblorCamara.Sacudir(0.15f);
-            UIAviso.Mensaje("¡Encontraste TODAS las galletas de jengibre!\n★ PODER DE GALLETA: corres más rápido y tus bolas de nieve aturden el doble\n"
-                + (yaEraTuyo ? "★ Santa te tiene preparado el FINAL ESPECIAL" : "★ Desbloqueaste al elfo secreto JENGIBRE"), 7f);
-        }
-        else UIAviso.Mensaje("¡Galleta de jengibre! " + Encontradas + "/" + Total, 2.5f);
+        if (Encontradas == 1) UIHistoria.Mostrar(Guion.PrimeraGalleta);
+        if (Encontradas >= Total && Total > 0)
+            UIAviso.Mensaje("¡Encontraste las " + Total + " galletas!\nLlévalas a la charola de Santa, junto a la chimenea.", 6f);
+        else if (indice >= 0 && indice < Guion.FormaGalleta.Length)
+            UIAviso.Mensaje(Guion.AvisoGalleta(indice, Encontradas, Total), 3f);
         Vidas.PorGalleta(Encontradas);   // Difícil: cada 2 => +1 vida; Imposible: cada 5 (su mensaje reemplaza al de arriba)
         ActualizarHUD();
         gameObject.SetActive(false);
     }
 
-    static void ActualizarHUD()
+    /// <summary>"N O C H E B U E N A": dorado = en la charola · blanco = en la bolsa · gris = falta.</summary>
+    public static void ActualizarHUD()
     {
         if (textoHUD == null)
         {
             var canvas = UIConstructor.Canvas;
             if (canvas == null) return;
-            var rt = UIConstructor.Rect("Galletas", canvas.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(320, 40), new Vector2(30 + 22 + 160, -30 - 170 - 26 - (Dificultad.ConVidas ? 114 : 0)));   // debajo del panel Objetivo (30,-30, alto 170); con vidas, debajo de los corazones
+            var rt = UIConstructor.Rect("Galletas", canvas.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(520, 40), new Vector2(30 + 22 + 260, -30 - 170 - 26 - (Dificultad.ConVidas ? 114 : 0)));
             textoHUD = UIConstructor.Texto(rt, "", 26, new Color(1f, 0.85f, 0.6f), TextAnchor.MiddleLeft);
             rt.gameObject.AddComponent<SeguirPanel>();
             UIConstructor.Sombra(textoHUD);
         }
-        textoHUD.text = "Galletas  " + Encontradas + "/" + Total + (Todas ? "   <color=#ffd36b>★ Poder de galleta</color>" : "");
+        var sb = new System.Text.StringBuilder("Galletas  ");
+        for (int i = 0; i < Guion.PalabraGalletas.Length; i++)
+        {
+            string c = Puestas.Contains(i) ? "#ffd36b" : (EnBolsa.Contains(i) ? "#ffffff" : "#ffffff40");
+            sb.Append("<color=").Append(c).Append(">").Append(Guion.PalabraGalletas[i]).Append("</color> ");
+        }
+        if (CharolaLlena) sb.Append("  <color=#ffd36b>★ Poder de galleta</color>");
+        textoHUD.text = sb.ToString();
     }
 
-    /// <summary>El texto "Galletas x/10" va debajo del panel del objetivo (y debajo de los corazones si hay vidas).</summary>
+    /// <summary>El texto de galletas va debajo del panel del objetivo (y debajo de los corazones si hay vidas).</summary>
     class SeguirPanel : MonoBehaviour
     {
         void LateUpdate()
@@ -95,10 +122,10 @@ public class Galleta : MonoBehaviour
     public static string Resumen()
     {
         if (Total == 0) return "";
-        return "\n\nGalletas de jengibre encontradas: " + Encontradas + " / " + Total
-            + (Todas ? "  ¡Todas! ★\nSanta se comió hasta las migajas. ¡Jengibre ya puede trabajar en el taller!"
-                     : (PlayerPrefs.GetInt("ElfoSecreto", 0) == 1
-                        ? "\n(Junta las " + Total + " en una misma noche para el final especial)"
-                        : "\n(Junta las " + Total + " para un final especial y un elfo secreto)"));
+        return "\n\nGalletas NOCHEBUENA: " + Encontradas + " / " + Total + " encontradas, " + Puestas.Count + " en la charola"
+            + (CharolaLlena ? "  ¡Charola completa! ★\nSanta se comió hasta las migajas. ¡Jengibre ya trabaja en el taller!"
+                            : (PlayerPrefs.GetInt("ElfoSecreto", 0) == 1
+                               ? "\n(Llena la charola en una misma noche para el final especial)"
+                               : "\n(Llena la charola de Santa para un final especial y un elfo secreto)"));
     }
 }

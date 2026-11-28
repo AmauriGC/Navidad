@@ -20,6 +20,9 @@ public class RelojAmanecer : MonoBehaviour
     public float Progreso { get { return Mathf.Clamp01(segundos / (minutosReales * 60f)); } }
     public bool SeAcabo { get; private set; }
 
+    /// <summary>Historia 1.5: el minijuego de la charola pausa el juego, pero la noche sigue avanzando.</summary>
+    public void Avanzar(float s) { segundos += s; }
+
     float segundos; Text texto; CanvasGroup grupo;
     Material cielo; Color horizonte0, arriba0; Color ambiente0;
     int avisosDados;
