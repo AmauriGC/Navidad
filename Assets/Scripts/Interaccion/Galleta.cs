@@ -92,7 +92,7 @@ public class Galleta : MonoBehaviour
         {
             var canvas = UIConstructor.Canvas;
             if (canvas == null) return;
-            var rt = UIConstructor.Rect("Galletas", canvas.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(520, 40), new Vector2(30 + 22 + 260, -30 - 170 - 26 - (Dificultad.ConVidas ? 114 : 0)));
+            var rt = UIConstructor.Rect("Galletas", canvas.transform, new Vector2(0, 1), new Vector2(0, 1), new Vector2(760, 40), new Vector2(30 + 22 + 260, -30 - 170 - 26 - (Dificultad.ConVidas ? 114 : 0)));
             textoHUD = UIConstructor.Texto(rt, "", 26, new Color(1f, 0.85f, 0.6f), TextAnchor.MiddleLeft);
             rt.gameObject.AddComponent<SeguirPanel>();
             UIConstructor.Sombra(textoHUD);
@@ -113,6 +113,9 @@ public class Galleta : MonoBehaviour
         void LateUpdate()
         {
             var rt = (RectTransform)transform;
+            // como los corazones: solo mientras juegas (en cinemáticas y diálogos se esconde)
+            bool ver = Juego.Estado == Juego.Modo.Jugando || Juego.Estado == Juego.Modo.Pausa || (Juego.Estado == Juego.Modo.Cinematica && CharolaGalletas.Abierta);
+            if (textoHUD != null && textoHUD.enabled != ver) textoHUD.enabled = ver;
             float y = UIObjetivo.Abajo + 12f + (Dificultad.ConVidas ? 50f : 0f) + (Linterna.Activa ? 45f : 0f) + 20f;
             rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, -y);
         }

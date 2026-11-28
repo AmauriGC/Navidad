@@ -35,6 +35,8 @@ public class CharolaGalletas : Interactuable
     readonly Dictionary<int, GameObject> puestas = new Dictionary<int, GameObject>();
     Transform[] huecos = new Transform[10];
     bool abierto, salir, completando;
+    /// <summary>¿Está abierto el minijuego? (el HUD de galletas se queda visible mientras).</summary>
+    public static bool Abierta { get { var c = FindAnyObjectByType<CharolaGalletas>(); return c != null && c.abierto; } }
     Pieza agarrada, ultima;
     float alturaPlano;
     Camera cam; CinemachineBrain cerebro;
