@@ -527,10 +527,16 @@ public class DirectorJuego : MonoBehaviour
                 o.transform.position = PosCajaLote + new Vector3(-0.32f + i * 0.32f + lado * 0.035f, 0.05f + (i % 2) * 0.06f, 0.08f);
                 o.transform.localScale = Vector3.one * 0.035f;
                 var r = o.GetComponent<Renderer>(); if (rojo) r.sharedMaterial = rojo; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                // rojo puro y no muy fuerte: con más emisión el ACES + Bloom los vuelve blancos
+                var mpb = new MaterialPropertyBlock();
+                mpb.SetColor("baseColorFactor", new Color(1f, 0.05f, 0.03f)); mpb.SetColor("_BaseColor", new Color(1f, 0.05f, 0.03f));
+                mpb.SetColor("emissiveFactor", new Color(1f, 0.04f, 0.02f) * 1.6f); mpb.SetColor("_EmissionColor", new Color(1f, 0.04f, 0.02f) * 1.6f);
+                r.SetPropertyBlock(mpb);
                 ojos.Add(o);
             }
-            var l = new GameObject("OjosLuz").AddComponent<Light>(); l.type = LightType.Point; l.color = Color.red; l.range = 0.8f; l.intensity = 2f;
-            l.transform.position = PosCajaLote + new Vector3(-0.32f + i * 0.32f, 0.1f, 0.3f); ojos.Add(l.gameObject);
+            // luz chiquita: solo un brillo rojo alrededor de cada par (antes llenaba toda la caja de rojo)
+            var l = new GameObject("OjosLuz").AddComponent<Light>(); l.type = LightType.Point; l.color = new Color(1f, 0.1f, 0.05f); l.range = 0.35f; l.intensity = 0.5f;
+            l.transform.position = PosCajaLote + new Vector3(-0.32f + i * 0.32f, 0.08f, 0.18f); ojos.Add(l.gameObject);
             GestorAudio.Efecto3D("clac", PosCajaLote, 1f);
         }
         GestorAudio.Efecto("cuerda", 0.8f, 0f);                   // tres llaves de cuerda empiezan a girar
@@ -541,6 +547,7 @@ public class DirectorJuego : MonoBehaviour
 
     void MoverCamaraFija(Vector3 pos, Vector3 mira)
     {
+        seguirTrineo = false;   // si no, MirarTrineo sigue girando la cámara hacia el cielo
         camCinematica.transform.position = pos; camCinematica.transform.LookAt(mira);
         camCinematica.Priority.Value = 100; camCinematica.PreviousStateIsValid = false;
     }
@@ -581,19 +588,36 @@ public class DirectorJuego : MonoBehaviour
             float alto = 2f; var rs = c.GetComponentsInChildren<Renderer>();
             if (rs.Length > 0) { var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds); alto = Mathf.Max(0.1f, b.size.y); }
             c.transform.localScale = c.transform.localScale * (0.42f / alto);
-            c.transform.SetPositionAndRotation(RepisaChiquitos + new Vector3((i - 1) * 0.3f, 0f, 0f), Quaternion.Euler(0f, (i - 1) * -12f, 0f));
+            // juntitos: hombro con hombro, los de las orillas un poquito girados hacia el centro
+            c.transform.SetPositionAndRotation(RepisaChiquitos + new Vector3((i - 1) * 0.19f, 0f, Mathf.Abs(i - 1) * -0.03f), Quaternion.Euler(0f, (i - 1) * -15f, 0f));
             i++;
         }
+        // llegan con los ojos rojos apagados y se prenden AZULES frente a la cámara
+        var anims = FindObjectsByType<CascanuecesAnimador>();
+        foreach (var a in anims) { a.ojosBuenos = true; a.parpadeo = 0f; }
+        var luz = new GameObject("LuzOjosBuenos").AddComponent<Light>();
+        luz.type = LightType.Point; luz.color = new Color(0.35f, 0.6f, 1f); luz.range = 0.6f; luz.intensity = 0f; luz.shadows = LightShadows.None;
+        luz.transform.position = RepisaChiquitos + new Vector3(0f, 0.34f, 0.45f);   // un reflejito azul nada más (de cerca quema)
+        Vector3 mira = RepisaChiquitos + Vector3.up * 0.22f;
+        MoverCamaraFija(RepisaChiquitos + new Vector3(0.35f, 0.45f, 1.5f), mira);
+        StartCoroutine(MoverCamara(RepisaChiquitos + new Vector3(0.35f, 0.45f, 1.5f), RepisaChiquitos + new Vector3(0.08f, 0.3f, 0.85f), mira, 3.2f, true));
+        yield return new WaitForSeconds(1.1f);
+        GestorAudio.Efecto("encender", 0.5f, 0f);
+        for (float t = 0f; t < 1f; t += Time.deltaTime / 0.6f)
+        {
+            foreach (var a in anims) a.parpadeo = t;
+            luz.intensity = t * 0.05f;
+            yield return null;
+        }
         OjosBuenos();
-        MoverCamaraFija(RepisaChiquitos + new Vector3(0.5f, 0.5f, 1.9f), RepisaChiquitos + Vector3.up * 0.2f);
-        yield return MoverCamara(RepisaChiquitos + new Vector3(0.5f, 0.5f, 1.9f), RepisaChiquitos + new Vector3(0.15f, 0.32f, 1.2f), RepisaChiquitos + Vector3.up * 0.2f, 3f, true);
-        yield return new WaitForSeconds(0.6f);
+        yield return new WaitForSeconds(2.2f);
+        Destroy(luz.gameObject);
     }
 
     /// <summary>Epílogo: sin la charola completa, uno tiene la galleta que no encontraste; con la charola llena, uno parpadea.</summary>
     IEnumerator EpilogoRepisa()
     {
-        MoverCamaraFija(RepisaChiquitos + new Vector3(0.1f, 0.3f, 1.1f), RepisaChiquitos + Vector3.up * 0.2f);
+        MoverCamaraFija(RepisaChiquitos + new Vector3(0.06f, 0.28f, 0.8f), RepisaChiquitos + Vector3.up * 0.2f);
         UIFundido.Negro(0f);
         GameObject galleta = null;
         var charola = FindAnyObjectByType<CharolaGalletas>();
@@ -606,7 +630,7 @@ public class DirectorJuego : MonoBehaviour
             {
                 galleta = Instantiate(f);
                 galleta.transform.localScale = Vector3.one * 0.32f;
-                galleta.transform.SetPositionAndRotation(RepisaChiquitos + new Vector3(0.12f, 0.16f, 0.1f), Quaternion.Euler(-15f, 180f, 20f) * Quaternion.Euler(0f, 180f, 0f));
+                galleta.transform.SetPositionAndRotation(RepisaChiquitos + new Vector3(0.1f, 0.13f, 0.12f), Quaternion.Euler(-15f, 180f, 20f) * Quaternion.Euler(0f, 180f, 0f));
             }
         }
         yield return new WaitForSeconds(1.2f);
@@ -679,7 +703,6 @@ public class DirectorJuego : MonoBehaviour
                 yield return MoverCamara(cara + c.transform.forward * 2.2f + Vector3.up * 0.4f, cara + c.transform.forward * 1.8f + Vector3.up * 0.2f, cara, 2f, false);
                 break;
             }
-        OjosBuenos();                   // los ojos rojos se vuelven azules mientras se lee
         yield return UIHistoria.Esperar(Guion.FinalCascanueces);
         yield return CascanuecesEnRepisa();   // chiquitos y juntitos en la repisa
         foreach (var r in modeloElfo) r.enabled = true;
