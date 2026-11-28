@@ -16,6 +16,9 @@ public class EtapaArbol
     [Tooltip("Pista que aparece en el objetivo.")]
     public string pista = "Busca la maceta";
     public GameObject[] partes;
+    [Tooltip("Etapa EXTERNA (historia v1.5): no se entrega en el árbol, la completa otro sistema llamando a\n" +
+             "ArbolNavidad.CompletarExterna(tipoPieza). Ej.: CurarSiete (MaquinaRota) y FabricarEstrella (FabricaEstrella).")]
+    public bool externa;
 }
 
 /// <summary>
@@ -56,6 +59,8 @@ public class ArbolNavidad : Interactuable
     int entregadas;   // piezas entregadas dentro de la etapa actual
 
     public bool Completo { get { return etapas == null || etapa >= etapas.Length; } }
+    /// <summary>Número de la etapa actual (0..etapas.Length-1); al completar = etapas.Length.</summary>
+    public int IndiceEtapa { get { return etapa; } }
     public EtapaArbol EtapaActual { get { return Completo ? null : etapas[etapa]; } }
     public int EntregadasEtapa { get { return entregadas; } }
     public int TotalPiezas { get { int n = 0; foreach (var e in etapas) n += e.partes.Length; return n; } }
@@ -75,7 +80,7 @@ public class ArbolNavidad : Interactuable
     }
 
     // ---------- Interactuable ----------
-    public override bool PuedeInteractuar(Interactor quien) { return !Completo; }
+    public override bool PuedeInteractuar(Interactor quien) { return !Completo && !EtapaActual.externa; }
 
     public override string Texto(Interactor quien)
     {
@@ -106,6 +111,7 @@ public class ArbolNavidad : Interactuable
     {
         if (Completo) return;
         var e = EtapaActual;
+        if (e.externa) { TerminarEtapa(); return; }    // (la prueba automática también pasa por aquí)
         GameObject parte = e.partes[entregadas];
         parte.SetActive(true);
         StartCoroutine(Aparecer(parte.transform));
@@ -129,6 +135,28 @@ public class ArbolNavidad : Interactuable
         alColocarPieza.Invoke();
         if (AlCambiar != null) AlCambiar();
         if (etapaTerminada >= 0 && AlCompletarEtapa != null) AlCompletarEtapa(etapaTerminada);
+        if (Completo) alCompletar.Invoke();
+    }
+
+    /// <summary>Otro sistema avisa que ya cumplió una etapa externa (ej. "CurarSiete"). Solo cuenta si es la etapa actual;
+    /// si llega antes (curaste a Siete temprano), el DirectorJuego la da por buena en cuanto el árbol llegue a ella.</summary>
+    public bool CompletarExterna(string tipo)
+    {
+        var e = EtapaActual;
+        if (e == null || !e.externa || e.tipoPieza != tipo) return false;
+        TerminarEtapa();
+        return true;
+    }
+
+    void TerminarEtapa()
+    {
+        int terminada = etapa;
+        etapa++; entregadas = 0;
+        GestorAudio.Efecto("etapa");
+        ActualizarColision();
+        ActualizarLuces(false);
+        if (AlCambiar != null) AlCambiar();
+        if (AlCompletarEtapa != null) AlCompletarEtapa(terminada);
         if (Completo) alCompletar.Invoke();
     }
 
