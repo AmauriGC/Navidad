@@ -34,7 +34,10 @@ Las **galletas** ganan protagonismo: son la charola de Santa y se acomodan por f
 ## Fases (de una en una; Cristian revisa en Blender/Unity antes de seguir)
 - [x] H1 — Guion (27/11, aprobado): `FASE_01_historia_guion.md` → `Guion.cs` (etapas 5-6, gritos, descargas, galletas,
       Jengibre, final dorado, derrotas por amanecer/sobrecarga, letreros nuevos como constantes) y 5 letreros de la escena.
-- [ ] H2 — Modelos (Vitrina → aprobar → .glb): a) Siete v3 (tablero 3 focos, palanca, foco-carita, cables al techo);
+- [ ] H2 — Modelos (Vitrina → aprobar → .glb):
+      - [x] a) Siete v3 (27/11, aprobada): `Blender/siete_v3.py` → Props_Taller.glb. Hijos de Maquina: Siete_OjoL/R, Siete_Boca,
+        Siete_Foco_1..3 (engrane, resorte, fusible; 1 = izquierda vista de frente), Siete_Aguja (Y local = 120° − 24°·descargas),
+        Siete_Palanca (bisagra eje X), Siete_Engrane_1/2, Siete_Cables (camino en `Blender/datos_siete.json`, coords de Unity).
       b) cuarto de máquinas (motor, plano, puerta); c) llave de cuerda, estrella rota, caja del lote 24, Refaccion_Fusible;
       d) charola + 10 galletas con forma y letra.
 - [ ] H3 — Escenario en Unity: puerta, colisiones/capas, luces, cámara, NavMesh, letreros nuevos, estrella rota en la repisa.
