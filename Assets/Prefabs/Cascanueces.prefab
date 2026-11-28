@@ -2484,8 +2484,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CascanuecesAnimador
   ia: {fileID: 2721811087991856830}
   amplitudPaso: 32
-  colorOjos: {r: 1, g: 0.08, b: 0.05, a: 1}
-  brilloOjos: 6
+  colorOjos: {r: 1, g: 0, b: 0.02, a: 1}
+  brilloOjos: 1.4
+  mordidaMax: 12
 --- !u!4 &2207914340517837031 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5265104088895067332, guid: de17ead8281d5f602ae42cf07b5cb68b, type: 3}

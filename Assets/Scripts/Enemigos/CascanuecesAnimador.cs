@@ -14,8 +14,11 @@ public class CascanuecesAnimador : MonoBehaviour
 {
     public Cascanueces ia;
     public float amplitudPaso = 32f;
-    public Color colorOjos = new Color(1f, 0.08f, 0.05f);
-    public float brilloOjos = 6f;
+    // rojo intenso: con brillo 6 y algo de verde el ACES lo volvía rosa/salmón casi blanco
+    public Color colorOjos = new Color(1f, 0f, 0.02f);
+    public float brilloOjos = 1.4f;      // probado en Unity con ACES: 1.2-1.8 rojo intenso; 2.5 ya se aclara al centro
+    [Tooltip("Cuánto abre la mandíbula al morder en Persecución (grados). Con la cara v3 más de ~14° mete la barba al pecho.")]
+    public float mordidaMax = 12f;
 
     Transform piernaL, piernaR, brazoL, brazoR, cuerpo, cabeza, mandibula;
     Vector3 cuerpoPos0;
@@ -42,6 +45,9 @@ public class CascanuecesAnimador : MonoBehaviour
                 var mats = r.materials;   // copia propia: cada cascanueces brilla por separado
                 foreach (var m in mats) if (m.name.StartsWith("Cas_Ojos")) matOjos = m;
                 propEmision = Shader.PropertyToID(matOjos != null && matOjos.HasProperty("emissiveFactor") ? "emissiveFactor" : "_EmissionColor");
+                // el material de los ojos no traía emisión en el .glb: sin esta palabra clave el shader de glTFast
+                // ignora emissiveFactor y los ojos nunca brillaban
+                if (matOjos != null) { matOjos.EnableKeyword("_EMISSIVE"); matOjos.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive; }
             }
         }
     }
@@ -97,11 +103,15 @@ public class CascanuecesAnimador : MonoBehaviour
         float abrir = 0f;
         switch (e)
         {
-            case Cascanueces.Estado.Sospecha: rotCabeza = Quaternion.Euler(0f, Mathf.Sin(t * 5f) * 35f, 0f); abrir = 8f; break;
-            case Cascanueces.Estado.Persecucion: abrir = (Mathf.Sin(t * 18f) * 0.5f + 0.5f) * 28f; break;   // clac clac
-            case Cascanueces.Estado.Aturdido: rotCabeza = Quaternion.Euler(Mathf.Sin(t * 7f) * 12f, t * 400f % 360f, Mathf.Cos(t * 7f) * 12f); abrir = 20f; break;
+            case Cascanueces.Estado.Sospecha: rotCabeza = Quaternion.Euler(0f, Mathf.Sin(t * 5f) * 35f, 0f); abrir = 4f; break;
+            case Cascanueces.Estado.Persecucion:
+                abrir = (Mathf.Sin(t * 18f) * 0.5f + 0.5f) * mordidaMax;                 // clac clac
+                rotCabeza = Quaternion.Euler(-abrir * 0.45f, 0f, 0f);                     // la cabeza se echa un poco atrás al abrir: la barba no choca con el pecho
+                break;
+            case Cascanueces.Estado.Aturdido: rotCabeza = Quaternion.Euler(Mathf.Sin(t * 7f) * 12f, t * 400f % 360f, Mathf.Cos(t * 7f) * 12f); abrir = mordidaMax * 0.8f; break;
         }
-        if (cabeza) cabeza.localRotation = Quaternion.Slerp(cabeza.localRotation, rotCabeza, 12f * Time.deltaTime);
+        if (cabeza) cabeza.localRotation = e == Cascanueces.Estado.Persecucion ? rotCabeza   // va al ritmo de la mordida
+                                         : Quaternion.Slerp(cabeza.localRotation, rotCabeza, 12f * Time.deltaTime);
         if (mandibula) mandibula.localRotation = X(abrir);
         Ojos(e == Cascanueces.Estado.Aturdido ? 0.1f : 0.25f + ia.Alerta * 0.75f);
     }
