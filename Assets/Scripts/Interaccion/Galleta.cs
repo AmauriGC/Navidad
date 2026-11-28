@@ -60,6 +60,31 @@ public class Galleta : MonoBehaviour
         f.name = "Forma"; f.transform.localPosition = Vector3.zero; f.transform.localRotation = Quaternion.identity;
         f.transform.localScale = Vector3.one * escalaForma;
         foreach (var r in f.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        BrilloParejo(f);
+    }
+
+    static readonly int idBase = Shader.PropertyToID("baseColorFactor"), idEmision = Shader.PropertyToID("emissiveFactor");
+
+    /// <summary>v1.5: antes la luz iba de UN lado (y giraba con la galleta): la cara de atrás se veía oscura.
+    /// Ahora cada material brilla un poquito con su propio color (emisión, sin luz extra) y la luz va centrada
+    /// arriba, así las dos caras se ven igual mientras gira.</summary>
+    void BrilloParejo(GameObject forma)
+    {
+        foreach (var r in forma.GetComponentsInChildren<Renderer>())
+        {
+            var mats = r.sharedMaterials;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                if (mats[i] == null || !mats[i].HasProperty(idEmision)) continue;
+                Color c = mats[i].HasProperty(idBase) ? mats[i].GetColor(idBase) : Color.white;
+                var mpb = new MaterialPropertyBlock();
+                r.GetPropertyBlock(mpb, i);
+                mpb.SetColor(idEmision, new Color(c.r, c.g, c.b) * 0.45f);
+                r.SetPropertyBlock(mpb, i);
+            }
+        }
+        var luz = transform.Find("Luz");
+        if (luz != null) luz.localPosition = new Vector3(0f, 0.55f / Mathf.Max(0.01f, transform.lossyScale.y), 0f);
     }
 
     void Update()
