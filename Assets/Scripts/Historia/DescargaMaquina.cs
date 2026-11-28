@@ -127,9 +127,12 @@ public class DescargaMaquina : MonoBehaviour
     // ------------------------------------------------------------------ efectos
     /// <summary>Un rayito de luz viaja por los cables (una luz con estela que recorre el camino).
     /// Público: el final lo usa al revés y en dorado (la "descarga buena").</summary>
-    public IEnumerator Rayo(Color color, bool alReves = false)
+    public IEnumerator Rayo(Color color, bool alReves = false) { return RayoEntre(camino, color, duracionRayo, alReves); }
+
+    /// <summary>Un rayito con estela que recorre los puntos 'pts' en 'dur' segundos (la intro lo usa del techo a la caja).</summary>
+    public IEnumerator RayoEntre(Vector3[] pts, Color color, float dur, bool alReves = false)
     {
-        if (camino == null || camino.Length < 2) yield break;
+        if (pts == null || pts.Length < 2) yield break;
         var go = new GameObject("Rayo");
         var luz = go.AddComponent<Light>(); luz.type = LightType.Point; luz.color = color; luz.range = 4f; luz.intensity = 8f; luz.shadows = LightShadows.None;
         var estela = go.AddComponent<TrailRenderer>();
@@ -141,29 +144,29 @@ public class DescargaMaquina : MonoBehaviour
         estela.colorGradient = g;
         estela.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         if (materialRayo != null) estela.sharedMaterial = materialRayo;
-        // largo total del camino para ir a velocidad pareja
-        float total = 0f; for (int i = 1; i < camino.Length; i++) total += Vector3.Distance(camino[i - 1], camino[i]);
-        for (float t = 0f; t < 1f; t += Time.deltaTime / duracionRayo)
+        float total = 0f; for (int i = 1; i < pts.Length; i++) total += Vector3.Distance(pts[i - 1], pts[i]);
+        go.transform.position = Punto(pts, alReves ? 1f : 0f, total);
+        for (float t = 0f; t < 1f; t += Time.deltaTime / dur)
         {
-            go.transform.position = Punto(alReves ? 1f - t : t, total) + Random.insideUnitSphere * 0.04f;
+            go.transform.position = Punto(pts, alReves ? 1f - t : t, total) + Random.insideUnitSphere * 0.04f;
             luz.intensity = 7f + Random.Range(-2f, 2f);
             yield return null;
         }
-        go.transform.position = Punto(alReves ? 0f : 1f, total);
+        go.transform.position = Punto(pts, alReves ? 0f : 1f, total);
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.3f) { luz.intensity = Mathf.Lerp(12f, 0f, t); yield return null; }
         Destroy(go);
     }
 
-    Vector3 Punto(float t, float total)
+    static Vector3 Punto(Vector3[] pts, float t, float total)
     {
         float meta = Mathf.Clamp01(t) * total, andado = 0f;
-        for (int i = 1; i < camino.Length; i++)
+        for (int i = 1; i < pts.Length; i++)
         {
-            float l = Vector3.Distance(camino[i - 1], camino[i]);
-            if (andado + l >= meta) return Vector3.Lerp(camino[i - 1], camino[i], l > 0f ? (meta - andado) / l : 0f);
+            float l = Vector3.Distance(pts[i - 1], pts[i]);
+            if (andado + l >= meta) return Vector3.Lerp(pts[i - 1], pts[i], l > 0f ? (meta - andado) / l : 0f);
             andado += l;
         }
-        return camino[camino.Length - 1];
+        return pts[pts.Length - 1];
     }
 
     IEnumerator Parpadeo(float duracion)

@@ -118,9 +118,22 @@ public class CascanuecesAnimador : MonoBehaviour
 
     void Suavizar(Transform tr, Quaternion q) { if (tr) tr.localRotation = Quaternion.Slerp(tr.localRotation, q, 8f * Time.deltaTime); }
 
+    /// <summary>Historia 1.5: al final la descarga buena de Siete les quita la cuerda y los ojos se vuelven AZULES
+    /// (juguetes buenos). Mientras sea true los ojos son azules sin importar el estado. 'Parpadeo' = 0..1 (1 abierto).</summary>
+    public bool ojosBuenos;
+    public float parpadeo = 1f;
+    public Color colorOjosBuenos = new Color(0.25f, 0.6f, 1f);
+    static readonly int idBase = Shader.PropertyToID("baseColorFactor");
+
     void Ojos(float k)
     {
         if (matOjos == null) return;
+        if (ojosBuenos)
+        {
+            matOjos.SetColor(propEmision, colorOjosBuenos * brilloOjos * 0.9f * parpadeo);
+            if (matOjos.HasProperty(idBase)) matOjos.SetColor(idBase, Color.Lerp(Color.black, colorOjosBuenos, parpadeo));
+            return;
+        }
         matOjos.SetColor(propEmision, colorOjos * brilloOjos * k);
     }
 }

@@ -405,6 +405,7 @@ public class DirectorJuego : MonoBehaviour
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.8f) { grupoTitulo.alpha = 1f - t; yield return null; }
         grupoTitulo.alpha = 0f;
         yield return UIHistoria.Esperar(Guion.Intro);
+        yield return IntroZaap();       // historia 1.5: Siete se enciende sola y despierta al lote 24
         // vista del taller con el árbol desarmado
         UIFundido.Negro(1f);
         Tomar(tomaIntro, arbol.transform, true);
@@ -450,8 +451,10 @@ public class DirectorJuego : MonoBehaviour
         // 1) la cámara rodea el árbol mientras sale el banner
         Vector3 centro = arbol.transform.position + Vector3.up * 2.2f;
         Vector3 desde = centro + (jugador.position - centro).normalized * 7f + Vector3.up * 1.5f;
+        if (etapa == 4 || etapa == 5)   // historia 1.5: curar a Siete y la estrella nueva se celebran viendo a Siete
+        { centro = PosSiete + Vector3.up * 0.3f; desde = centro + new Vector3(-2.2f, 0.9f, -4.2f); }
         desde.y = Mathf.Max(desde.y, 2.5f);
-        Vector3 hasta = centro + Quaternion.Euler(0, 50, 0) * (desde - centro);
+        Vector3 hasta = centro + Quaternion.Euler(0, etapa == 4 || etapa == 5 ? 35 : 50, 0) * (desde - centro);
         StartCoroutine(MoverCamara(desde, hasta, centro, 4.5f, true));
         string nombre = etapa < Guion.NombreMision.Length ? Guion.NombreMision[etapa] : arbol.etapas[etapa].nombre;
         yield return UIBanner.Esperar("¡MISIÓN COMPLETADA!", nombre, "Etapa " + (etapa + 1) + " de " + arbol.etapas.Length);
@@ -483,6 +486,144 @@ public class DirectorJuego : MonoBehaviour
         string cuenta = e.partes.Length > 1 ? " (" + e.partes.Length + ")" : "";
         yield return UIBanner.Esperar("NUEVO OBJETIVO", e.nombre + cuenta, e.pista, 3.5f, new Color(0.6f, 0.9f, 1f));
         EmpezarAJugar();
+    }
+
+    // ================================================================== HISTORIA 1.5: cinemáticas de Siete
+    static readonly Vector3 PosSiete = new Vector3(8f, 1.8f, 5.3f);          // la carita de Siete
+    static readonly Vector3 PosCajaLote = new Vector3(1.5f, 0.35f, -7.7f);   // la caja del lote 24
+    static readonly Vector3 RepisaChiquitos = new Vector3(-3f, 2.5f, -8.35f); // arriba de la repisa sur A
+
+    /// <summary>¡ZAAP!: Siete tose, un rayo va por los cables y cae sobre la caja del lote 24; se prenden 3 pares de ojos rojos.</summary>
+    IEnumerator IntroZaap()
+    {
+        var descarga = FindAnyObjectByType<DescargaMaquina>();
+        UIFundido.Negro(1f);
+        MoverCamaraFija(PosSiete + new Vector3(-1.6f, 0.4f, -3.2f), PosSiete);
+        yield return null;
+        StartCoroutine(UIFundido.A(0f, 0.8f));
+        yield return MoverCamara(PosSiete + new Vector3(-1.6f, 0.4f, -3.2f), PosSiete + new Vector3(-0.9f, 0.2f, -2.2f), PosSiete, 2.2f, false);
+        GestorAudio.Efecto("voz_siete2", 0.6f, 0f);              // tose: bzz... bzz...
+        if (Siete.Instancia != null) Siete.Instancia.Descarga(0);
+        yield return new WaitForSeconds(0.6f);
+        GestorAudio.Efecto("descarga", 1f, 0f);
+        TemblorCamara.Sacudir(0.25f);
+        UIBanner.Mostrar(Guion.Zaap, "", "", 1.6f, new Color(0.6f, 0.9f, 1f));
+        if (descarga != null) StartCoroutine(descarga.Rayo(descarga.colorRayo));
+        // la cámara sigue el rayo por el techo hasta la caja
+        yield return MoverCamara(PosSiete + new Vector3(-0.9f, 0.2f, -2.2f), new Vector3(3f, 3.2f, -3.5f), new Vector3(1f, 4f, 0f), 1.0f, true);
+        if (descarga != null) StartCoroutine(descarga.RayoEntre(new[] { new Vector3(0f, 6.7f, 0f), new Vector3(0.8f, 4f, -4f), PosCajaLote + Vector3.up * 0.3f }, descarga.colorRayo, 0.45f));
+        yield return MoverCamara(new Vector3(3f, 3.2f, -3.5f), PosCajaLote + new Vector3(0.3f, 0.9f, 2.2f), PosCajaLote, 0.8f, true);
+        GestorAudio.Efecto3D("instalar", PosCajaLote, 1f);
+        TemblorCamara.Sacudir(0.2f);
+        // tres pares de ojos rojos en la oscuridad de la caja, uno por uno (clac, clac, clac)
+        var ojos = new List<GameObject>();
+        Material rojo = null; var foco = GameObject.Find("Siete_Foco_1"); if (foco) rojo = foco.GetComponent<Renderer>().sharedMaterial;
+        for (int i = 0; i < 3; i++)
+        {
+            yield return new WaitForSeconds(0.45f);
+            for (int lado = -1; lado <= 1; lado += 2)
+            {
+                var o = GameObject.CreatePrimitive(PrimitiveType.Sphere); Destroy(o.GetComponent<Collider>());
+                o.transform.position = PosCajaLote + new Vector3(-0.32f + i * 0.32f + lado * 0.035f, 0.05f + (i % 2) * 0.06f, 0.08f);
+                o.transform.localScale = Vector3.one * 0.035f;
+                var r = o.GetComponent<Renderer>(); if (rojo) r.sharedMaterial = rojo; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                ojos.Add(o);
+            }
+            var l = new GameObject("OjosLuz").AddComponent<Light>(); l.type = LightType.Point; l.color = Color.red; l.range = 0.8f; l.intensity = 2f;
+            l.transform.position = PosCajaLote + new Vector3(-0.32f + i * 0.32f, 0.1f, 0.3f); ojos.Add(l.gameObject);
+            GestorAudio.Efecto3D("clac", PosCajaLote, 1f);
+        }
+        GestorAudio.Efecto("cuerda", 0.8f, 0f);                   // tres llaves de cuerda empiezan a girar
+        yield return new WaitForSeconds(1.4f);
+        yield return UIFundido.A(1f, 0.8f);
+        foreach (var o in ojos) Destroy(o);
+    }
+
+    void MoverCamaraFija(Vector3 pos, Vector3 mira)
+    {
+        camCinematica.transform.position = pos; camCinematica.transform.LookAt(mira);
+        camCinematica.Priority.Value = 100; camCinematica.PreviousStateIsValid = false;
+    }
+
+    /// <summary>Final: la luz del árbol viaja a Siete por los cables y Siete regresa una descarga DORADA (la buena).</summary>
+    IEnumerator DescargaBuena()
+    {
+        var descarga = FindAnyObjectByType<DescargaMaquina>();
+        Vector3 techo = new Vector3(4f, 6.6f, 4f);
+        StartCoroutine(MoverCamara(new Vector3(-1f, 3.2f, -3f), new Vector3(1.5f, 3.4f, -2.5f), techo, 2.6f, true));
+        if (descarga != null) yield return descarga.Rayo(new Color(1f, 0.95f, 0.75f), true);   // del árbol a Siete
+        GestorAudio.Efecto("voz_siete3", 0.7f, 0f);
+        yield return MoverCamara(new Vector3(1.5f, 3.4f, -2.5f), PosSiete + new Vector3(-1.2f, 0.4f, -2.6f), PosSiete, 0.9f, true);
+        GestorAudio.Efecto("melodia_siete", 0.6f, 0f);
+        GestorAudio.Efecto("fabricar", 0.7f, 0f);
+        yield return new WaitForSeconds(0.5f);
+        if (descarga != null) StartCoroutine(descarga.Rayo(descarga.colorRayoBueno));            // de Siete al árbol, dorada
+        UIFundido.Destello(new Color(1f, 0.85f, 0.4f, 0.5f));
+        yield return MoverCamara(PosSiete + new Vector3(-1.2f, 0.4f, -2.6f), new Vector3(0f, 3.5f, -6f), arbol.transform.position + Vector3.up * 3f, 1.2f, true);
+    }
+
+    void OjosBuenos()
+    {
+        foreach (var a in FindObjectsByType<CascanuecesAnimador>(FindObjectsInactive.Include)) { a.ojosBuenos = true; a.parpadeo = 1f; }
+    }
+
+    /// <summary>Los tres cascanueces quedan CHIQUITOS y JUNTITOS arriba de la repisa, con sus ojos azules.</summary>
+    IEnumerator CascanuecesEnRepisa()
+    {
+        int i = 0;
+        var lista = new List<Cascanueces>(cascanueces);
+        lista.RemoveAll(c => c == null);
+        lista.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
+        foreach (var c in lista)
+        {
+            var ag = c.GetComponent<UnityEngine.AI.NavMeshAgent>(); if (ag) ag.enabled = false;
+            c.enabled = false;
+            float alto = 2f; var rs = c.GetComponentsInChildren<Renderer>();
+            if (rs.Length > 0) { var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds); alto = Mathf.Max(0.1f, b.size.y); }
+            c.transform.localScale = c.transform.localScale * (0.42f / alto);
+            c.transform.SetPositionAndRotation(RepisaChiquitos + new Vector3((i - 1) * 0.3f, 0f, 0f), Quaternion.Euler(0f, (i - 1) * -12f, 0f));
+            i++;
+        }
+        OjosBuenos();
+        MoverCamaraFija(RepisaChiquitos + new Vector3(0.5f, 0.5f, 1.9f), RepisaChiquitos + Vector3.up * 0.2f);
+        yield return MoverCamara(RepisaChiquitos + new Vector3(0.5f, 0.5f, 1.9f), RepisaChiquitos + new Vector3(0.15f, 0.32f, 1.2f), RepisaChiquitos + Vector3.up * 0.2f, 3f, true);
+        yield return new WaitForSeconds(0.6f);
+    }
+
+    /// <summary>Epílogo: sin la charola completa, uno tiene la galleta que no encontraste; con la charola llena, uno parpadea.</summary>
+    IEnumerator EpilogoRepisa()
+    {
+        MoverCamaraFija(RepisaChiquitos + new Vector3(0.1f, 0.3f, 1.1f), RepisaChiquitos + Vector3.up * 0.2f);
+        UIFundido.Negro(0f);
+        GameObject galleta = null;
+        var charola = FindAnyObjectByType<CharolaGalletas>();
+        if (!Galleta.CharolaLlena && charola != null)
+        {
+            int falta = -1; for (int k = 0; k < 10; k++) if (!Galleta.Puestas.Contains(k) && !Galleta.EnBolsa.Contains(k)) { falta = k; break; }
+            if (falta < 0) for (int k = 0; k < 10; k++) if (!Galleta.Puestas.Contains(k)) { falta = k; break; }
+            var f = charola.Forma(falta);
+            if (f != null)
+            {
+                galleta = Instantiate(f);
+                galleta.transform.localScale = Vector3.one * 0.32f;
+                galleta.transform.SetPositionAndRotation(RepisaChiquitos + new Vector3(0.12f, 0.16f, 0.1f), Quaternion.Euler(-15f, 180f, 20f) * Quaternion.Euler(0f, 180f, 0f));
+            }
+        }
+        yield return new WaitForSeconds(1.2f);
+        if (Galleta.CharolaLlena)
+        {
+            // uno de los tres parpadea (¡guiño!)
+            var anims = FindObjectsByType<CascanuecesAnimador>();
+            if (anims.Length > 0)
+            {
+                var a = anims[0];
+                GestorAudio.Efecto("tick", 0.6f, 0f);
+                for (float t = 0f; t < 1f; t += Time.deltaTime / 0.35f) { a.parpadeo = Mathf.Abs(Mathf.Cos(t * Mathf.PI)); yield return null; }
+                a.parpadeo = 1f;
+            }
+        }
+        else GestorAudio.Efecto("galleta", 0.5f, 0f);              // ñam
+        yield return new WaitForSeconds(1.4f);
     }
 
     /// <summary>¿Ya se cumplió esta etapa externa? (historia 1.5)</summary>
@@ -526,6 +667,7 @@ public class DirectorJuego : MonoBehaviour
         StartCoroutine(EncenderLuces());
         yield return UIBanner.Esperar("¡EL GRAN ÁRBOL ESTÁ COMPLETO!", "La estrella brilla otra vez", "Misión final", 4f);
         yield return UIHistoria.Esperar(Guion.FinalArbol);
+        yield return DescargaBuena();   // historia 1.5: la luz del árbol viaja a Siete y regresa dorada
 
         // los cascanueces congelados (escondemos al elfo para que no se atraviese frente a la cámara)
         var modeloElfo = new System.Collections.Generic.List<Renderer>();
@@ -537,7 +679,9 @@ public class DirectorJuego : MonoBehaviour
                 yield return MoverCamara(cara + c.transform.forward * 2.2f + Vector3.up * 0.4f, cara + c.transform.forward * 1.8f + Vector3.up * 0.2f, cara, 2f, false);
                 break;
             }
+        OjosBuenos();                   // los ojos rojos se vuelven azules mientras se lee
         yield return UIHistoria.Esperar(Guion.FinalCascanueces);
+        yield return CascanuecesEnRepisa();   // chiquitos y juntitos en la repisa
         foreach (var r in modeloElfo) r.enabled = true;
 
         // afuera: llega el trineo y amanece
@@ -550,6 +694,7 @@ public class DirectorJuego : MonoBehaviour
         else yield return new WaitForSeconds(3f);
         yield return UIHistoria.Esperar(Guion.LineasFinalSanta(MaquinaRota.Reparada));
         if (Galleta.Todas && trineo != null) yield return EscenaGalletas();
+        yield return EpilogoRepisa();   // la galleta mordida (o el guiño si llenaste la charola)
         yield return UIFundido.A(1f, 1.5f);
         yield return UIHistoria.Esperar(Guion.Epilogo);
         // créditos (+ cuántas galletas de jengibre encontró)
