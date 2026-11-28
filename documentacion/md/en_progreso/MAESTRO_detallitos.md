@@ -4,6 +4,7 @@
 - Creado: 27/11/2026 · Actualizado: 27/11/2026
 
 ## Objetivo
+Versión destino: **1.5** (junto con la historia nueva de la Máquina 7; hoy está la 1.4 en GitHub).
 Pulir detalles que se notan al jugar: cara y sonidos de los cascanueces, ventisca, perseguidores
 afuera, bola de nieve, bloque de hielo, galletas, menú de pausa y reno.
 
@@ -12,9 +13,10 @@ afuera, bola de nieve, bloque de hielo, galletas, menú de pausa y reno.
 - No incluye: el tráiler.
 
 ## Fases (de una en una; el autor revisa en Blender/Unity antes de seguir)
-- [x] Fase 1 — Caras (27/11, aprobadas): cascanueces como JUGUETE de madera (`Blender/cascanueces_cara_v3.py`:
-      cilindro torneado con ventana de boca recortada y hueco oscuro `Cas_Boca`, palanca = pedazo del mismo cilindro
-      al ras, dientes pintados, ojos/cachetes/cejas pintados, pelo y barba lisos, laca; bisagra en (0,-0.02,1.255)).
+- [x] Fase 1 — Caras (27/11, aprobadas): cascanueces con el DISEÑO ORIGINAL (pelito, cejas, bigote, barba de bolitas)
+      y la boca corregida (`Blender/cascanueces_cara_v4.py`, usa helpers de `cascanueces_cara_v3.py`): cráneo con ventana
+      de boca recortada y hueco oscuro `Cas_Boca`, palanca = pedazo del mismo cráneo al ras, dientes pintados, barba
+      pegada a la palanca, pupila roja chica; bisagra en (0,-0.02,1.255). La v3 (juguete pintado) se descartó.
       `CascanuecesAnimador`: mordida máx. 12°, la cabeza se echa atrás al morder; ojos (1,0,0.02) × 1.4
       (con ACES, 2.5 ya se aclaraba). Elfo (`Blender/elfo_cara_v3.py`): misma carita pegada a la piel real de la
       cabeza (rayos contra la malla), sirve para los 4 elfos. Partida automática hasta el Final: 0 errores.
