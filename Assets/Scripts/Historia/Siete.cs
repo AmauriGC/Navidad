@@ -136,6 +136,7 @@ public class Siete : MonoBehaviour
     {
         if (palanca == null || jalando) yield break;
         jalando = true;
+        GestorAudio.Efecto3D("palanca", palanca.position, 0.9f);
         // en Unity girar NEGATIVO en X lleva la perilla hacia el frente (hacia el árbol)
         for (float t = 0f; t < 1f; t += Time.deltaTime / 0.45f) { palanca.localRotation = rotPalanca * Quaternion.AngleAxis(-70f * Suave(t), Vector3.right); yield return null; }
         palanca.localRotation = rotPalanca * Quaternion.AngleAxis(-70f, Vector3.right);

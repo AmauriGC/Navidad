@@ -98,7 +98,8 @@ public class DescargaMaquina : MonoBehaviour
             }
             if (cerca != null && cerca.DespertarYa()) UIAviso.Mensaje("¡La descarga despertó a " + cerca.nombre + " antes de tiempo!", 4f);
         }
-        foreach (var c in todos) if (c.Despierto) c.DarCuerda(Grave ? 1.35f : 1.15f, Grave ? 8f : 5f);
+        foreach (var c in todos)
+            if (c.Despierto) { c.DarCuerda(Grave ? 1.35f : 1.15f, Grave ? 8f : 5f); GestorAudio.Efecto3D("cuerda", c.transform.position + Vector3.up, 0.7f); }
 
         if (!tutorial && Cuenta < Maximo) UIAviso.Mensaje(Guion.AvisoDescarga(Cuenta), 3.5f);
         if (Cuenta >= Maximo) Sobrecarga();

@@ -149,7 +149,7 @@ public class UIHistoria : MonoBehaviour
             float n = 0f;
             // VOZ al escribir: cada ~3 letras suena una "sílaba" corta (estilo Animal Crossing).
             // Santa = voz grave, el elfo = voz aguda, narración y notas = cajita musical suave.
-            string voz = l.tipo != Linea.Tipo.Dialogo ? "voz_narr" : (l.quien == "Santa" ? "voz_santa" : "voz_elfo");
+            string voz = l.tipo != Linea.Tipo.Dialogo ? "voz_narr" : (l.quien == "Santa" ? "voz_santa" : (l.quien == "Siete" ? "voz_siete" : "voz_elfo"));
             int ultimaSilaba = -1; float siguienteVoz = 0f;
             while (n < l.texto.Length)
             {
