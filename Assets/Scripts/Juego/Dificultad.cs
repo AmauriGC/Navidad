@@ -102,7 +102,12 @@ public static class Dificultad
         var cajas = lista.ToArray();
         System.Array.Sort(cajas, (a, b) => string.CompareOrdinal(a.name, b.name));
         for (int i = 0; i < cajas.Length; i++) cajas[i].gameObject.SetActive(i < d.cajasSorpresa);
-        if (d.ventiscaMin > 0f && Object.FindAnyObjectByType<Ventisca>() == null) new GameObject("Ventisca").AddComponent<Ventisca>().Configurar(d.ventiscaMin, d.ventiscaMax);
+        if (d.ventiscaMin > 0f && Object.FindAnyObjectByType<Ventisca>() == null)
+        {
+            var gv = new GameObject("Ventisca");
+            gv.AddComponent<Ventisca>().Configurar(d.ventiscaMin, d.ventiscaMax);
+            gv.AddComponent<VentiscaBonita>();   // v1.5: copos grandes, ráfagas al ras del suelo y velo
+        }
 
         // OSCURIDAD: baja la exposición del Global Volume (volume.profile es una COPIA en Play: no cambia el asset)
         if (d.oscuridad != 0f)
