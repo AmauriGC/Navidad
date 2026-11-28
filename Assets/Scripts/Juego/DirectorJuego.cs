@@ -979,7 +979,7 @@ public class DirectorJuego : MonoBehaviour
         for (int k = 0; k < panelesSeccion.Length; k++)
         {
             panelesSeccion[k].gameObject.SetActive(k == i);
-            botonesSeccion[k].color = k == i ? new Color(1f, 0.75f, 0.3f, 0.9f) : new Color(1f, 1f, 1f, 0.1f);
+            botonesSeccion[k].color = k == i ? new Color(1f, 0.75f, 0.3f, 0.95f) : new Color(1f, 0.92f, 0.85f, 0.14f);
         }
         tituloSeccion.text = NombresSeccion[i];
     }
@@ -1009,7 +1009,7 @@ public class DirectorJuego : MonoBehaviour
         var caja = UIConstructor.Rect("Consejos", p, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(1180, 150), new Vector2(0, -290));
         UIConstructor.Redondear(UIConstructor.Imagen(caja, new Color(0.45f, 0.75f, 1f, 0.12f)));
         UIConstructor.Texto(UIConstructor.PantallaCompleta("Texto", caja),
-            "<b><color=#9fe0ff>En Difícil e Imposible</color></b>\nRecarga la linterna junto a la chimenea o un farol\n" +
+            "<b><color=#9fe0ff>En Difícil e Imposible</color></b>\nRecarga la linterna junto a la chimenea o un farol  ·  Afuera siguen tus huellas\n" +
             "Refúgiate bajo techo en las ventiscas  ·  Rodea las cajas sorpresa", 25, new Color(0.88f, 0.92f, 1f)).lineSpacing = 1.1f;
     }
 
@@ -1058,7 +1058,8 @@ public class DirectorJuego : MonoBehaviour
         // ---- pausa: COLUMNA a la izquierda (título + secciones + acciones) y TARJETA a la derecha con la sección
         capaPausa = UIConstructor.Capa("Pausa", 40);
         grupoPausa = UIConstructor.Grupo(capaPausa, 0f);
-        UIConstructor.Imagen(UIConstructor.PantallaCompleta("Fondo", capaPausa), new Color(0.02f, 0.03f, 0.08f, 0.72f));
+        var fondoPausa = UIConstructor.PantallaCompleta("Fondo", capaPausa);
+        UIConstructor.Imagen(fondoPausa, new Color(0.02f, 0.03f, 0.08f, 0.72f));
         bool web = Application.platform == RuntimePlatform.WebGLPlayer;     // en el navegador no se puede "salir"
         bool tactil = Tactil.Activo;
 
@@ -1086,15 +1087,15 @@ public class DirectorJuego : MonoBehaviour
         // tarjeta: ocupa del lado derecho de la columna hasta la orilla (se adapta a pantallas anchas de teléfono)
         var tarjeta = UIConstructor.Rect("Tarjeta", capaPausa, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-580, 900), new Vector2(270, 0));
         UIConstructor.Redondear(UIConstructor.Imagen(tarjeta, new Color(0.05f, 0.07f, 0.16f, 0.82f)));
-        tituloSeccion = UIConstructor.Titulo(UIConstructor.Rect("TituloSeccion", tarjeta, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(900, 90), new Vector2(0, -62)),
+        tituloSeccion = UIConstructor.Titulo(UIConstructor.Rect("TituloSeccion", tarjeta, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(900, 90), new Vector2(0, -80)),
                                              "", 60, new Color(1f, 0.85f, 0.45f), TextAnchor.MiddleCenter, FontStyle.Bold);
         UIConstructor.Sombra(tituloSeccion, 3f);
-        UIConstructor.Imagen(UIConstructor.Rect("Linea", tarjeta, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(700, 3), new Vector2(0, -112)), new Color(1f, 0.85f, 0.45f, 0.35f));
+        UIConstructor.Imagen(UIConstructor.Rect("Linea", tarjeta, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(700, 3), new Vector2(0, -128)), new Color(1f, 0.85f, 0.45f, 0.35f));
         panelesSeccion = new RectTransform[NombresSeccion.Length];
         for (int i = 0; i < NombresSeccion.Length; i++)
         {
             var c = UIConstructor.PantallaCompleta("Seccion_" + NombresSeccion[i], tarjeta);
-            c.offsetMax = new Vector2(0, -80);          // debajo del título
+            c.offsetMax = new Vector2(0, -96);          // debajo del título
             panelesSeccion[i] = c;
         }
         // SONIDO (y sensibilidad de la cámara): sliders que guardan su valor en Opciones (PlayerPrefs)
@@ -1111,6 +1112,8 @@ public class DirectorJuego : MonoBehaviour
         // CONTROLES y MEDALLAS
         ListaControles(panelesSeccion[2]);
         Medallas.Lista(panelesSeccion[3]);
+        // v1.5: decoración navideña (copos, bastón de caramelo, foquitos, acebo y nieve en la tarjeta)
+        UIPausaNavidad.Decorar(capaPausa, fondoPausa, columna, tarjeta, tp.rectTransform);
         MostrarSeccion(0);
 
         // ---- derrota (amaneció sin terminar el árbol)
