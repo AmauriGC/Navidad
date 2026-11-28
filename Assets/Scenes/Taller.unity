@@ -4870,7 +4870,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Letrero
   textoAccion: Leer
   titulo: 'Inventario: lote 24'
-  texto: "\u2022 3 cascanueces de madera\n  (pintados por la M\xE1quina 7)\n\n<b>Observaciones:</b>\nAnoche estaban dentro de su caja.\nHoy amanecieron en la repisa... mirando hacia la puerta.\n\nSeguro fue una broma de los elfos del turno de d\xEDa.\nSeguro."
+  texto: "\u2022 3 cascanueces de madera\n  (pintados y con cuerda de la M\xE1quina 7)\n\u2022 Llaves de cuerda: incluidas.\n  NO darles m\xE1s de 3 vueltas.\n\n<b>Observaciones:</b>\nAnoche estaban dentro de su caja.\nHoy amanecieron en la repisa... mirando hacia la puerta.\n\nSeguro fue una broma de los elfos del turno de d\xEDa.\nSeguro."
   comentarioTilo: 
   indicadorNuevo: {fileID: 967850270}
   alLeer:
@@ -26903,7 +26903,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Letrero
   textoAccion: Leer
   titulo: Tablero de turnos
-  texto: "<b>TURNO DE NOCHE:</b> Tilo\n\n1. Cuidar el Gran \xC1rbol hasta que regrese Santa.\n2. NO tocar la M\xE1quina 7 (sigue descompuesta).\n3. Dar de comer a los renos a las 6:00 a.m.\n\nP.D. Los cascanueces del lote 24 se quedan en las repisas. NO los muevas.\n\n\u2014 Jefe de Elfos"
+  texto: "<b>TURNO DE NOCHE:</b> Tilo\n\n1. Cuidar el Gran \xC1rbol hasta que regrese Santa.\n2. NO tocar la M\xE1quina 7 (sigue descompuesta... y anda sentimental).\n3. Dar de comer a los renos a las 6:00 a.m.\n\nP.D. La charola de galletas de Santa va junto a la chimenea. NO se las coman.\n\n\u2014 Jefe de Elfos"
   comentarioTilo: "Cuidar el \xE1rbol... s\xED, claro. Qu\xE9 podr\xEDa salir mal."
   indicadorNuevo: {fileID: 265120703}
   alLeer:
@@ -41254,7 +41254,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Letrero
   textoAccion: Leer
   titulo: "Instrucciones del Gran \xC1rbol"
-  texto: "<b>Orden de armado:</b>\n\n1. La maceta\n2. Tres ramas (de abajo hacia arriba)\n3. Seis esferas\n4. La guirnalda de luces\n5. La estrella, al final\n\nSiempre en ese orden. Lleva cada pieza al tapete y presiona [E] junto al \xE1rbol."
+  texto: "<b>Orden de armado:</b>\n\n1. La maceta\n2. Tres ramas (de abajo hacia arriba)\n3. Seis esferas\n4. La guirnalda de luces\n5. La estrella, al final\n\nSiempre en ese orden. Lleva cada pieza al tapete y presiona [E] junto al \xE1rbol.\n\n<size=26>Si la estrella se rompe: solo la M\xE1quina 7 sabe hacer una nueva.</size>"
   comentarioTilo: "Bien. Primero la maceta... dicen que qued\xF3 en el establo."
   indicadorNuevo: {fileID: 894125724}
   alLeer:
@@ -44517,6 +44517,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CamaraOrbitaMouse
   sensibilidad: 0.12
   invertirY: 0
+  sensibilidadTactil: 1.6
   zoomMin: 2.5
   zoomMax: 7
   velocidadZoom: 0.004
@@ -66619,8 +66620,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Letrero
   textoAccion: Leer
   titulo: "AVISO: M\xE1quina 7"
-  texto: "<b>FUERA DE SERVICIO</b>\n\nDesde el martes le pinta OJOS a todos los juguetes, aunque nadie se lo pida.\nAyer le pint\xF3 ojos a una escoba.\n\nNo encender. No acercarse.\nNo mirarla fijamente.\n\n\u2014 Taller de Mantenimiento"
-  comentarioTilo: "\xBFOjos? \xBFA TODOS los juguetes...?"
+  texto: "<b>FUERA DE SERVICIO</b>\n\nDesde el martes le pinta OJOS a todos los juguetes y les da cuerda de m\xE1s.\nAyer le pint\xF3 ojos a una escoba: barri\xF3 sola toda la noche.\n\nLe falta: un engrane, un resorte y el fusible grande.\n\nNo encender. No acercarse. No mirarla fijamente.\n\n\u2014 Taller de Mantenimiento"
+  comentarioTilo: "\xBFOjos? \xBFY cuerda...? Ay, no."
   indicadorNuevo: {fileID: 975046215}
   alLeer:
     m_PersistentCalls:
@@ -99528,7 +99529,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Letrero
   textoAccion: Leer
   titulo: "P\xE1gina de un diario"
-  texto: "<i>\"Esta noche o\xED pasos de madera en el techo. Tac, tac, tac.\n\nMi abuela dec\xEDa que los juguetes con ojos pintados por una m\xE1quina despiertan en Nochebuena...\n\n...y que solo le temen a una cosa: a la luz del Gran \xC1rbol cuando est\xE1 completo.\"</i>"
+  texto: "<i>\"Esta noche o\xED pasos de madera en el techo. Tac, tac, tac.\n\nMi abuela dec\xEDa que los juguetes con ojos pintados por una m\xE1quina despiertan en Nochebuena, con la cuerda que ella les da...\n\n...y que solo se duermen con la luz del Gran \xC1rbol cuando est\xE1 completo.\"</i>"
   comentarioTilo: "La luz del Gran \xC1rbol... \xA1Tengo que terminarlo!"
   indicadorNuevo: {fileID: 821419202}
   alLeer:
